@@ -247,4 +247,4 @@ outbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/BC3recalib_mod.bam"
 recalib_db = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats"
 out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/recalibstat.txt"
 
-run_recalib(inbam, outbam, refs, recalib_db, out_stats)
+# run_recalib(inbam, outbam, refs, recalib_db, out_stats)

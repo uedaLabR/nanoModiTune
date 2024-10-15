@@ -96,9 +96,24 @@ def toNumberList(data):
 
     return ret
 
+import glob
+def loadKnownPos(knownPosDir,genome):
 
-def loadKnownPos(knownPos,path,flg):
+    knownPos = {}
+    files = glob.globs(knownPosDir)
+    for file in files:
 
+        if genome in file:
+
+            _loadKnownPos(knownPos, file)
+
+def getFlg(path):
+
+
+
+def _loadKnownPos(knownPos,path):
+
+    flg = getFlg(path)
     bed_df = pd.read_csv(path, header=None, sep='\t')
     for index, row in bed_df.iterrows():
         chr = row[0]
@@ -190,7 +205,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.utils import to_categorical
 import pandas as pd
 import os
-def classification(input,output,checkpoint_path,knowndir):
+def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
 
     # print(input,output,checkpoint_path,m5Cpath,psudepath)
     Flg_m5C = 0
@@ -198,9 +213,7 @@ def classification(input,output,checkpoint_path,knowndir):
     Flg_Error = 2
     Flg_other = 3
     Flg_nonDrachm6A = 4
-
-    knownPos = loadKnownPos(knowndir)
-
+    knownPos = loadKnownPos(knowndir,genome)
 
     bed_df = pd.read_csv(input, header=None, sep='\t')
     ccnt = 0
@@ -382,21 +395,12 @@ def classification(input,output,checkpoint_path,knowndir):
 def run():
 
     checkpoint_path = "/mnt/share/ueda/RNA004/resource/model_weights_5.h5"
-    # input = "/mnt/share/ueda/RNA004/U87/U87_WT/20231215_1505_MN32625_FAX70236_31c89747/unfilter_result.vcf"
-    # output = "/mnt/share/ueda/RNA004/U87/U87_WT/20231215_1505_MN32625_FAX70236_31c89747/result_filter.vcf"
-    m5Cpath = "/mnt/share/ueda/RNA004/resource/human.hg38.m5C.result.col29.bed"
-    psudepath = "/mnt/share/ueda/RNA004/resource/human.hg38.Pseudo.result.col29.bed"
-
-    # classification(input,output,checkpoint_path,m5Cpath,psudepath)
 
     input = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/unfilter_result.vcf"
     output = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/result_filter.vcf"
+    knowndir = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites"
+    classification(input,output,checkpoint_path,knowndir,genome="hg38")
 
-    classification(input,output,checkpoint_path)
 
-    # input = "/mnt/share/ueda/RNA004/U87/U87_STM2457/U87_STM2457/20240216_1602_MN32625_FAX70218_f0b7f679/unfilter_result.vcf"
-    # output = "/mnt/share/ueda/RNA004/U87/U87_STM2457/U87_STM2457/20240216_1602_MN32625_FAX70218_f0b7f679/result_filter.vcf"
-    #
-    # classification(input,output,checkpoint_path,m5Cpath,psudepath)
 
-#run()
+# run()
