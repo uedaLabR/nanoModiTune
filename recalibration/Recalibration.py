@@ -123,22 +123,31 @@ def sorfby(modkeys):
 
     return sorted_data
 
+import csv
+def write_string_and_data_to_csv(file_path,data):
+
+    # CSV
+    with open(file_path, mode='w', newline='') as file:
+
+        writer = csv.writer(file)
+        for row_data in data:
+            writer.writerow(row_data)
+
+
+
+
 import copy
-def recalib(refs, stats, bamfile, bamout):
+def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
     """
     Perform recalibration on the BAM file using reference and statistics.
 
-    Args:
-        refs (str): Path to the reference file.
-        stats (str): Directory path containing the recalibration stats.
-        bamfile (str): Input BAM file path.
-        bamout (str): Output recalibrated BAM file path.
     """
+    datadict = {}
     recalibrator = Recalib()
-    recalibrator.loadStats(stats)
+    recalibrator.loadStats(recalib_db)
     fasta = pysam.FastaFile(refs)
     lastref = ""
-    with pysam.AlignmentFile(bamfile, "rb") as bam_in, pysam.AlignmentFile(bamout, "wb", template=bam_in) as bam_out:
+    with pysam.AlignmentFile(inbam, "rb") as bam_in, pysam.AlignmentFile(outbam, "wb", template=bam_in) as bam_out:
 
         readcnt = 0
         recalibbase = 0
@@ -173,26 +182,38 @@ def recalib(refs, stats, bamfile, bamout):
 
                         for tp in processed_tuples:
 
-                            recalibscore = 0
                             pos, originalscore = tp
-                            sixMer = genome[pos-4:pos+2]
+                            sixMer = genome[pos-4:pos+2].upper()
                             if len(sixMer)==6:
                                 recalibscore = recalibrator.getModifiedScore(sixMer,refnuc, modkey[2], originalscore)
+                                unrefB = False
+                                if originalscore == ML[index]:
+                                    #if not something wrong
+                                    if originalscore != recalibscore:
 
-                            if originalscore == ML[index]:
-                                #if not something wrong
-                                if originalscore != recalibscore:
+                                        if recalibscore<0:
+                                            unref+=1
+                                            unrefB = True
+                                            recalibscore=0
+                                        else:
+                                            recalibbase+=1
 
-                                    if recalibscore<0:
-                                        unref+=1
-                                        recalibscore=0
+                                        ML[index] = recalibscore
+
                                     else:
-                                        recalibbase+=1
+                                        unchange+=1
 
-                                    ML[index] = recalibscore
+                                    if unrefB == False:
+                                        kkey = str(modkey[2])
+                                        if kkey in datadict:
+                                            counter = datadict[kkey]
+                                        else:
+                                            counter = np.zeros(256)
 
-                                else:
-                                    unchange+=1
+                                        #
+                                        if recalibscore > 0:
+                                            counter[recalibscore] = counter[recalibscore]+1
+                                            datadict[kkey] = counter
 
                             index+=1
 
@@ -205,10 +226,25 @@ def recalib(refs, stats, bamfile, bamout):
             # Write the modified read to the output BAM file
             bam_out.write(read)
 
+        print("readcnt, recalibbase, nonref, unchange")
+        print(readcnt, recalibbase, unref, unchange)
+        alldata = []
+        for key in datadict:
+            counter = datadict[key]
+            data = [key] + list(counter)
+            print(data)
+            alldata.append(data)
+            # factor = calculate_normalization_factor(lis)
+            # # print(key,factor,lis)
+
+        alldata.sort(key=lambda x: x[0])
+        write_string_and_data_to_csv(out_stats, alldata)
+
 # Example execution
 refs = "/share/reference/IVTmix.fa"
-bamfile = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/BC3.bam"
-bamout = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/BC3recalib_mod.bam"
-stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats"
+inbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/BC3.bam"
+outbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/BC3recalib_mod.bam"
+recalib_db = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats"
+out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/recalibstat.txt"
 
-recalib(refs, stats, bamfile, bamout)
+run_recalib(inbam, outbam, refs, recalib_db, out_stats)

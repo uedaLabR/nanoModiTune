@@ -77,8 +77,6 @@ def takeStats(ref,bam,out,modnuc,refnuc):
 
     datadict = {}
     a = mp.Aligner(ref)
-
-
     for seqname in a.seq_names:
 
 
