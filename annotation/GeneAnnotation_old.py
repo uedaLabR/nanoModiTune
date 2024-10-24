@@ -7,9 +7,9 @@ seqprepast = 5
 import pysam
 class GenomeAnnotator:
 
-    def __init__(self, file_path,convertMatrix,neibormargin=7):
+    def __init__(self, gtf_file,stringtie_gtf,neibormargin=7):
 
-        self.data = pd.read_csv(file_path, delimiter='\t')
+        self.data = pd.read_csv(gtf_file, delimiter='\t')
         data = self.data
         self.neibormargin = neibormargin
         didx = 0

@@ -294,7 +294,7 @@ def fetch_random_sequences(fasta_path, sequence_length=40, number_of_sequences=5
         if len(sequences) ==  number_of_sequences:
             break
         if sequence[19] == "C" or sequence[19] == "T":
-            sequences.append((sequence,3))
+            sequences.append((sequence,Flg_other))
 
     fasta.close()
 
@@ -327,86 +327,40 @@ def is_drach(sequence):
         return False
 
 
+Flg_Error = 0
+Flg_other = 1
+Flg_m6A = 2
+Flg_I = 3
+Flg_m5C = 4
+Flg_Y = 5
+
+def addData(data,file,flg,nuc,maxcnt):
+
+    bed_df = pd.read_csv(file, header=None, sep='\t')
+    column_19 = bed_df.iloc[:, 18]
+    cnt = 0
+    for x in column_19:
+        pseq = x
+        if x[19] == nuc:
+            pseq = x[:-1]
+        if len(pseq) == 40:
+            data.append((pseq, flg))
+            cnt += 1
+            if cnt > maxcnt:
+                break
+
 
 import pandas as pd
 import pysam
 def getData(m6Apath,m5Cpath, psudepath,editingpath, fp_ivtpath,fasta_path,eachsize):
 
     maxcnt = eachsize
-    #
-    tuple_list5 = []
-    bed_df = pd.read_csv(editingpath, header=None, sep='\t')
-    column_19 = bed_df.iloc[:, 18]
-    cnt = 0
-    for x in column_19:
-        if x[19] == "T":
-            pseq = x[:-1]
-            if len(pseq) == 40:
-                fmer = x[18:23]
-                # print(fmer)
-                tuple_list5.append((pseq, 5))
-                cnt += 1
-                if len(tuple_list5) > maxcnt:
-                    break
+    data = []
+    addData(data, editingpath, Flg_I, 'T',maxcnt)
+    addData(data, m6Apath, Flg_m6A, 'T', maxcnt)
+    addData(data, m5Cpath, Flg_m5C, 'G', maxcnt)
+    addData(data, psudepath, Flg_Y, 'A', maxcnt)
 
-    tuple_list4 = []
-    bed_df = pd.read_csv(m6Apath, header=None, sep='\t')
-    column_19 = bed_df.iloc[:, 18]
-    cnt = 0
-    for x in column_19:
-        if x[19] == "T":
-            pseq = x[:-1]
-            if len(pseq) == 40:
-                fmer = x[18:23]
-                tuple_list4.append((pseq, 4))
-                cnt += 1
-                if len(tuple_list4) > maxcnt:
-                    break
-
-    tuple_list0 = []
-    bed_df = pd.read_csv(m5Cpath, header=None, sep='\t')
-    column_19 = bed_df.iloc[:, 18]
-
-    cnt = 0
-    for x in column_19:
-
-        # print(pseq, pseq[19])
-        if random.random() < 0.75:
-            #Pick T center
-            if x[19] == "T":
-                pseq = x[:-1]
-                if len(pseq)==40:
-                    tuple_list0.append((pseq, 0))
-            elif x[21] == "T":
-                pseq = x[2:]+ x[0]
-                if len(pseq)==40:
-                    tuple_list0.append((pseq, 0))
-        else:
-            #Pick C center
-            pseq = x[1:]
-            if len(pseq) == 40:
-                # register C center seq to balance training set
-                if random.random() < 0.5:
-                    tuple_list0.append((pseq, 0))
-
-
-
-        if len(tuple_list0) > maxcnt:
-            break
-        cnt+=1
-
-    bed_df = pd.read_csv(psudepath, header=None, sep='\t')
-    column_19 = bed_df.iloc[:, 18]
-    tuple_list1 = []
-    for x in column_19:
-        pseq = x[1:]
-        # print(pseq, pseq[19])
-        if len(pseq) == 40:
-            tuple_list1.append((pseq, 1))
-
-    tuple_list1 = tuple_list1[0:maxcnt]
-
-    fasta = pysam.FastaFile(fasta_path)
     bed_df = pd.read_csv(fp_ivtpath, header=None, sep='\t')
 
     ccnt = 0
@@ -418,8 +372,6 @@ def getData(m6Apath,m5Cpath, psudepath,editingpath, fp_ivtpath,fasta_path,eachsi
         pos = row[1]
         alt = row[4]
         info = row[7]
-        if alt == "m6A":
-            continue
 
         seqexsist = False
         ifs = info.split(',')
@@ -437,40 +389,19 @@ def getData(m6Apath,m5Cpath, psudepath,editingpath, fp_ivtpath,fasta_path,eachsi
                         if "T" == qseq[19]:
                             tcnt+=1
 
-                        tuple_list2.append((qseq, 2))
+                        tuple_list2.append((qseq, Flg_Error))
                     seqexsist = True
             if "STRAND=False" in i:
                 strand = False
 
-        if  seqexsist == False:
-            qseq = fasta.fetch(chr,pos-20,pos+20).upper()
-            if strand == False:
-                qseq = fasta.fetch(chr, pos - 21, pos + 19).upper()
-                qseq = reverse_complement(qseq)
-            tuple_list2.append((qseq, 2))
-            if "C" == qseq[19]:
-                ccnt += 1
-            if "T" == qseq[19]:
-                tcnt += 1
-        # print("c,t",ccnt,tcnt,ccnt/(ccnt+tcnt))
         if len(tuple_list2) > maxcnt*5:
             break
-    fasta.close()
 
-    data = []
-    data.extend(tuple_list0)
-    data.extend(tuple_list1)
     data.extend(tuple_list2)
     tuple_list3 = fetch_random_sequences(fasta_path, sequence_length=40, number_of_sequences=maxcnt)
     data.extend(tuple_list3)
-    data.extend(tuple_list4)
-    data.extend(tuple_list5)
-    print(len(tuple_list0), len(tuple_list1), len(tuple_list2), len(tuple_list3), len(tuple_list4),len(tuple_list5))
-    data2 = []
-    for seq ,flg in data:
-        if len(seq)==40:
-            data2.append((seq,flg))
-    return data2
+
+    return data
 
 def trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,weightpath,outhistory,eachsize =15000,epoch=200):
 
@@ -489,4 +420,4 @@ fp_ivtpath = "/mnt/share/ueda/RNA004/resource/ivt_result.vcf"
 ref = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/bam_pass/U87ivt.fa"
 outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
 
-trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,weightpath,outhistory,eachsize =15000,epoch=200)
+# trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,weightpath,outhistory,eachsize =15000,epoch=200)

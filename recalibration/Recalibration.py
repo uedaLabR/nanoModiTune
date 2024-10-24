@@ -3,6 +3,7 @@ import csv
 import numpy as np
 import math
 import pysam
+from numba import jit
 
 def convert_to_cumulative_sum(data):
     """
@@ -134,6 +135,90 @@ def write_string_and_data_to_csv(file_path,data):
             writer.writerow(row_data)
 
 
+from numba import jit
+
+# @jit(nopython=True)
+def revcon(seq):
+    complement = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G','N':'N',
+                  'a': 't', 't': 'a', 'g': 'c', 'c': 'g'}
+
+    revcom_seq = []
+
+    # Iterate through the sequence in reverse
+    for i in range(len(seq) - 1, -1, -1):
+        base = seq[i]
+        revcom_seq.append(complement[base])
+
+    return ''.join(revcom_seq)
+
+
+splicethres = 50
+def  checkSplice(refposs,localpos,strand):
+
+    if strand:
+        s = localpos - 4
+        e = localpos + 2
+    else:
+        s = localpos - 3
+        e = localpos + 3
+
+    if s < 0 or e >= len(refposs):
+        return False
+    ss = refposs[s]
+    ee = refposs[e]
+    if ss == 0 or ee == 0:
+        return False
+    if ee-ss > splicethres:
+        return True
+    return False
+
+def getSpliceSeq(genome,localpos,refposs,strand):
+
+
+    seqlist = []
+    if strand:
+        s = localpos - 4
+        e = localpos + 2
+    else:
+        s = localpos - 3
+        e = localpos + 3
+
+    seq_range = range(s, e)
+    for x in seq_range:
+        gpos = convertToGenomepos(x, refposs)
+        if gpos > 0:
+            seqlist.append(genome[gpos])
+    seq = "".join(seqlist)
+    if not strand:
+        seq = revcon(seq)
+
+    return seq
+
+
+def getSixMer(genome,read,pos,localpos,refposs):
+
+    if read.is_unmapped:
+        return None
+
+    reverse = read.is_reverse
+
+    if reverse:
+
+        smer = genome[pos-3:pos+3].upper()
+        smer = revcon(smer)
+        #check splice
+        if checkSplice(refposs,localpos,False):
+            smer = getSpliceSeq(genome,localpos,refposs,False)
+
+    else:
+
+        smer = genome[pos-4:pos+2].upper()
+        #check splice
+        if checkSplice(refposs, localpos, True):
+            smer = getSpliceSeq(genome,localpos,refposs,True)
+
+    return smer
+
 
 
 import copy
@@ -149,6 +234,7 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
     lastref = ""
     with pysam.AlignmentFile(inbam, "rb") as bam_in, pysam.AlignmentFile(outbam, "wb", template=bam_in) as bam_out:
 
+
         readcnt = 0
         recalibbase = 0
         unref = 0
@@ -160,8 +246,11 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                 continue
 
             referencename = bam_in.get_reference_name(read.reference_id)
+            # print(readcnt,referencename,read)
             if referencename != lastref:
                 genome = fasta.fetch(referencename,0,None)
+                print("load",referencename)
+            lastref = referencename
 
             if read.has_tag("MM"):
 
@@ -177,13 +266,14 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                     for modkey in modkeys:
 
                         modlist = modbase[modkey]
-                        processed_tuples = [(convertToGenomepos(x, refposs), y) for x, y in modlist]
+                        processed_tuples = [(convertToGenomepos(x, refposs),x, y) for x, y in modlist]
                         refnuc = modkey[0]
 
                         for tp in processed_tuples:
 
-                            pos, originalscore = tp
-                            sixMer = genome[pos-4:pos+2].upper()
+                            pos,localpos,originalscore = tp
+
+                            sixMer = getSixMer(genome,read,pos,localpos,refposs)
                             if len(sixMer)==6:
                                 recalibscore = recalibrator.getModifiedScore(sixMer,refnuc, modkey[2], originalscore)
                                 unrefB = False
@@ -221,8 +311,9 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                 read.set_tag("XM", orginal_array)
 
             readcnt+=1
-            if readcnt%10000==0:
+            if readcnt%1000==0:
                 print(readcnt,recalibbase,unref,unchange)
+
             # Write the modified read to the output BAM file
             bam_out.write(read)
 
@@ -241,10 +332,15 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
         write_string_and_data_to_csv(out_stats, alldata)
 
 # Example execution
-refs = "/share/reference/IVTmix.fa"
-inbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/BC3.bam"
-outbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/BC3recalib_mod.bam"
+refs = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
+inbam = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.bam"
+outbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/Adipocyte_2out_recalib.bam"
 recalib_db = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats"
-out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/recalibstat.txt"
+out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recalibstat.txt"
 
-# run_recalib(inbam, outbam, refs, recalib_db, out_stats)
+from functools import partial
+import cProfile
+
+wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
+wrapped_function()
+# cProfile.run('wrapped_function()')

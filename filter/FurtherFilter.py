@@ -96,6 +96,14 @@ def toNumberList(data):
 
     return ret
 
+
+Flg_Error = 0
+Flg_other = 1
+Flg_m6A = 2
+Flg_I = 3
+Flg_m5C = 4
+Flg_Y = 5
+
 import glob
 def loadKnownPos(knownPosDir,genome):
 
@@ -109,7 +117,15 @@ def loadKnownPos(knownPosDir,genome):
 
 def getFlg(path):
 
-
+    if "m5C" in path:
+        return Flg_m5C
+    if "m6A" in path:
+        return Flg_m6A
+    if "Psuedo" in path:
+        return Flg_Y
+    if "editing" in path:
+        return Flg_I
+    return -1
 
 def _loadKnownPos(knownPos,path):
 
@@ -122,60 +138,6 @@ def _loadKnownPos(knownPos,path):
         knownPos[key] = flg
 
 
-def findShiftM5C(info):
-
-    ifs = info.split(',')
-    strandFalse = "STRAND=False" in info
-    for i in ifs:
-        if "SEQ=" in i:
-            qseq = i.replace("SEQ=", "")
-            if len(qseq) < 21:
-                return 0
-            if qseq[20] == "C":
-
-                if strandFalse:
-                    return -1
-                else:
-                    return 1
-
-            if qseq[18] == "C":
-
-                if strandFalse:
-                    return 1
-                else:
-                    return -1
-    if strandFalse:
-        return -1
-    else:
-        return 1
-
-def findShiftM6A(info):
-
-    ifs = info.split(',')
-    strandFalse = "STRAND=False" in info
-    for i in ifs:
-        if "SEQ=" in i:
-            qseq = i.replace("SEQ=", "")
-            # print(len(qseq))
-            if len(qseq) < 21:
-                return 0
-            if qseq[20] == "A":
-
-                if strandFalse:
-                    return 1
-                else:
-                    return -1
-
-            if qseq[18] == "A":
-
-                if strandFalse:
-                    return -1
-                else:
-                    return 1
-    if strandFalse:
-        return 1
-    else:
-        return -1
 
 def printout_unchange(bed_df,output):
 
@@ -195,6 +157,16 @@ def printout_unchange(bed_df,output):
     new_df2.to_csv(output, sep='\t', index=False)
 
 
+def getCalledFlg(ALT):
+
+    if ALT=="m":
+        return Flg_m5C
+    if ALT=="a":
+        return Flg_m6A
+    if ALT=="17802":
+        return Flg_Y
+    if ALT=="17596":
+        return Flg_I
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -208,26 +180,20 @@ import os
 def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
 
     # print(input,output,checkpoint_path,m5Cpath,psudepath)
-    Flg_m5C = 0
-    Flg_Y = 1
-    Flg_Error = 2
-    Flg_other = 3
-    Flg_nonDrachm6A = 4
+
     knownPos = loadKnownPos(knowndir,genome)
 
     bed_df = pd.read_csv(input, header=None, sep='\t')
     ccnt = 0
     tcnt = 0
 
-    tuple_list2 = []
+    tuple_list = []
     poslist = []
     for index, row in bed_df.iterrows():
         chr = row[0]
         pos = row[1]
         alt = row[4]
         info = row[7]
-        if alt == "m6A":
-            continue
 
         seqexsist = False
         ifs = info.split(',')
@@ -240,27 +206,17 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
                     qseq = qseq0[1:]
                     print(len(qseq),qseq)
                     if len(qseq) == 40:
-                        # print(qseq, qseq[19], 2, alt, info)
-                        if "C" == qseq[19]:
-                            ccnt += 1
-                        if "T" == qseq[19]:
-                            tcnt += 1
 
-                        tuple_list2.append(qseq)
+                        tuple_list.append(qseq)
                         key = str(chr) + ":" + str(pos)
                         poslist.append(key)
 
     if len(poslist) == 0:
-
         printout_unchange(bed_df,output)
         return
 
-    # np.save('/mnt/share/ueda/RNA004/resource/X_test.npy', X_test)
-    # np.save('/mnt/share/ueda/RNA004/resource/y_test.npy', y_test)
-    X_test = toNumberList(tuple_list2)
+    X_test = toNumberList(tuple_list)
     X_test = np.array(X_test)
-    # print("X_test shape:", X_test.shape)
-
 
     embed_dim = 64  # Embedding size for each token
     num_heads = 8  # Number of attention heads
@@ -302,9 +258,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
                   loss='categorical_crossentropy',
                   metrics=['acc'],run_eagerly=True)
 
-    # callbacks = [
-    #     checkpoint,EarlyStopping(patience=20)
-    # ]
+
     # Train the model.
     model.load_weights(checkpoint_path)
     predict = model.predict(X_test)
@@ -322,61 +276,32 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
     edited_rows = []
     for index, row in bed_df.iterrows():
 
+        predict_flg = -1
+        known_flg = -1
+
         chr = row[0]
         pos = row[1]
+        REF = row[3]
+        ALT = row[4]
+
         info = row[7]
-        shift = 0
 
         key0 = str(chr) + ":" + str(pos)
-        key1 = str(chr) + ":" + str(pos+1)
-        key_1 = str(chr) + ":" + str(pos-1)
-        shiftset = False
-        inKnownDB = False
+        if key0 in posdict:
+            predict_flg = posdict[key0]
+
         if key0 in knownPos:
-            flg = knownPos[key0]
-        elif key1 in knownPos:
-            flg = knownPos[key1]
+            known_flg = knownPos[key0]
             inKnownDB = True
-            shift = 1
-            shiftset = True
-        elif key_1 in knownPos:
-            flg = knownPos[key_1]
-            inKnownDB = True
-            shift = -1
-            shiftset = True
-        else:
-            flg = posdict.get(key0,-1)
 
-        if flg == Flg_m5C:
+        if known_flg < 0:
+            if predict_flg == Flg_Error:
+                row[6] = False # Filter out
+            if predict_flg == Flg_other:
+                row[6] = False # Filter out
+        called_flg = getCalledFlg(ALT)
 
-            if shiftset == False:
-                shift = findShiftM5C(info)
-
-            row[4] = "m5C"
-            refbase = row[3]
-            if refbase == "T":
-                row[3] ="C"
-                row[1] = int(row[1]) + shift
-                row[7] = row[7]+",shift="+str(shift)
-
-        if flg == Flg_nonDrachm6A:
-
-            row[3] = "A"
-            row[4] = "m6A"
-            if shiftset == False:
-                shift = findShiftM6A(info)
-
-            row[1] = int(row[1]) + shift
-            row[7] = row[7] + ",shift=" + str(shift)+",nonDRACH=True"
-
-        if flg == Flg_Y:
-            row[4] = "Y"
-        if flg == Flg_Error:
-            row[6] = False # Filter out
-        if flg == Flg_other:
-            row[6] = False # Filter out
-
-        if inKnownDB:
+        if inKnownDB and (known_flg ==called_flg) :
             row[6] = True
 
         edited_rows.append(row)

@@ -1,6 +1,6 @@
 depth_min: 10
 ratio_min: 0.05
 support_read_min: 4
-p_val_thres: 0.01
+p_null: 0.03
 lowqual_parcentile: 10
 min_mod_qual: 0.4

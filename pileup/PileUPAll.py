@@ -7,24 +7,7 @@ def getReferenceLength(read):
         if cigaroprator == 0 or cigaroprator == 2: # match or del
             refconsume = refconsume + cigarlen
     return refconsume
-def countGene(readlist,startEnd):
 
-    index, chrom, strand, start, end = startEnd
-    gekey = str(chrom)+":"+str(strand)+":"+str(start)+":"+str(end)
-    geneCounter = {}
-    for read, refposs in readlist:
-
-        xstag = gekey
-        if read.has_tag("XS"):
-            xstag = read.get_tag("XS")
-        # for TPM calclation
-        refMaplen = getReferenceLength(read)
-        if xstag not in geneCounter:
-            geneCounter[xstag] = refMaplen
-        else:
-            geneCounter[xstag] = geneCounter[xstag] + refMaplen
-
-    return geneCounter
 # bamfile_name=bamfile_name, annotator=annotator,
 #                           params=params, p_dict=p_dict, record=record,lowthres=lowthres
 
@@ -133,17 +116,26 @@ def calcP_null(q_list,pthres):
     qualmean = qsum/qcnt
     return 1- qualmean
 
+def countHighMod(q_list,modqualthres=128):
 
+    cnt=0
+    for q in q_list:
+        if q>=modqualthres:
+            cnt+=1
+    return cnt
 
 from scipy.stats import binomtest
 import math
-def judgePval(params, depth, modCnt,  q_list,pthres):
+def judgePval(params, depth,  q_list, pthres):
 
-    p_thres = float(params.get('p_val_thres', 0.01))
-    p_null = calcP_null(q_list,pthres)
+    p_null = float(params.get('p_null', 0.03))
+    highmodCnt = countHighMod(q_list)
+    if pthres > 0.4:
+        highmodCnt = countHighMod(q_list,192)
+
     p_value = 0
     try:
-        result = binomtest(modCnt, depth, p_null, alternative='greater')
+        result = binomtest(highmodCnt, depth, p_null, alternative='greater')
         p_value = result.pvalue
 
     except ValueError as e:
@@ -154,18 +146,17 @@ def judgePval(params, depth, modCnt,  q_list,pthres):
     elif p_value == 0:
         score = 1000
 
-    return p_null,p_value,score,(p_value <= p_thres)
+    print()
+    return p_value,score
 
-def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict,lowthres):
+
+def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
 
     result = []
     posmap = {}
 
     for read, refposs in readlist:
 
-        xstag = "ge"
-        if read.has_tag("XS"):
-            xstag = read.get_tag("XS")
 
         if read.has_tag("MM"):
 
@@ -185,7 +176,7 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict,lo
                             pdict = posmap.get(key,{})
                             posmap[key] = pdict
                             plist = pdict.get(p,[])
-                            plist.append((q,xstag))
+                            plist.append(q)
                             pdict[p] = plist
     depthCounter = {}
     for read, refposs in readlist:
@@ -199,23 +190,17 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict,lo
 
     modkeys = sorted(posmap.keys())
     for mkey in modkeys:
-        # print(p_dict,mkey)
+
         pthres = p_dict[mkey]
         for gpos in range(start, end):
-
-            fmer, mid5strand = getSixmer(record, chrom, gpos, strand)
-            refbase = fmer[2]
 
             pdict = posmap[mkey]
             if gpos  not in pdict:
                 continue
-            datalist = pdict[gpos]
-            q_list = [x[0] for x in datalist]
-            ts_list = [x[1] for x in datalist]
 
+            q_list = pdict[gpos]
 
             modCnt,counts = count_intervals_simple(pthres,q_list)
-            maints = most_frequent(ts_list)
             if gpos in depthCounter:
                depth = depthCounter[gpos]
             else:
@@ -227,80 +212,67 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict,lo
             initfilterFail = initFilterFail(depth, ratio,modCnt,params)
             if initfilterFail:
                 continue
-
             # binomial test
-            p_null, p_value, score, judgeOK = judgePval(params, depth, modCnt,  q_list,pthres)
-            # pass filter
-            alternativeSplicingregion = False
-            annotation = None
-            neighborseqOrg = None
-            if judgeOK:
-                annoret = annotator.annotate_genomic_position(chrom, strand, gpos, maints,record)
-                neighborseqOrg = getNeighborSeq(record, chrom, gpos, strand)
-                # check motief and
-                if annoret is not None:
-                    neighborseq, alternativeSplicingregion, annotation = annoret
-                    fmernew = neighborseq[17:23]
-                    # reculculate if exon boundary
-                    if fmer != fmernew:
-                        fmer = fmernew
+            p_value,score = judgePval(params, depth,  q_list,pthres)
+            statsTestOK = (p_value<0.01) or (p_value==0)
+            neighborseq = None
+            annoret = None
+            if statsTestOK:
 
-                    if annotation is not None:
-                        (utrlabel1, gene_id, gene_symbol, dist, neighbor_seq, spliceJunction) = annotation
-                        annotation = (utrlabel1, gene_id, gene_symbol, dist, spliceJunction)
-                        neighborseqOrg = takeSeq(neighborseqOrg,neighbor_seq)
+                annoret = annotator.annotate_genomic_position(chrom, strand, gpos)
+                neighborseq = getNeighborSeq(record, chrom, gpos, strand)
 
-
+            fmer, mid5strand = getSixmer(record, chrom, gpos, strand)
             # depth, ratio, mostMismatchBase, mostMismatchCnt, diffcnt, base_counts, maints = ret
             formatted_af = f"{ratio:.4f}"
             info = "STRAND="+str(strand) +",AF=" + formatted_af + ",DP=" + str(depth) \
-                   + ",MOD_Count=" + str(modCnt) +",MOD_Count_byQV="+str(counts)\
-                   + ",PVAL=" + f"{p_value:.4f}" + ",P_null=" + f"{p_null:.5f}" + ",MainTs=" + maints \
-                   + ",ASR=" + str(alternativeSplicingregion) \
-                   + ",SEQ=" + str(neighborseqOrg) + ", Anno=" + str(annotation)
+                   + ",MOD_Count=" + str(modCnt) +",MOD_Count_highbyQV="+str(counts)\
+                   + ",PVAL=" + f"{p_value:.4f}"
+
+            if neighborseq is not None:
+                info = info + ",SEQ=" + neighborseq[0]
+            if annoret is not None:
+                info = info +"," + annoret
 
             REF = fmer[3:4]
             ALT = mkey
-            tp = (chrom, gpos, ".", REF, ALT, score, judgeOK, info)
+            tp = (chrom, gpos, ".", REF, ALT, score, statsTestOK, info)
+            print(tp)
             result.append(tp)
 
     return result
 
-def pileup(startEnd,bamfile_name,annotator,params,p_dict,record,lowthres):
+def pileup(interval,strand,bamfile_name,annotator,params,p_dict,record):
 
-    index,chrom,strand,start,end = startEnd
-    strand = (strand == "1")
+    chrom,start,end = interval.chrom,interval.start,interval.end
+    # print(strand)
+    strand = (strand == "p")
 
     #start pileup reads
     bamfile = pysam.AlignmentFile(bamfile_name, "rb")
     readlist = []
     for read in bamfile.fetch(chrom, start, end):
 
-        map_strand = True
-        if read.is_reverse:
-            map_strand = False
-        if strand != map_strand:
+        if strand == (not read.is_reverse):
             continue
 
         refposs = read.get_reference_positions(full_length=True)
         readlist.append((read,refposs))
 
-    result = pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict,lowthres)
-    geneCounter = countGene(readlist,startEnd)
-
+    result = pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict)
     bamfile.close()
-    return index,result,geneCounter
+    return result
 
 from multiprocessing import Pool
 from functools import partial
-from annotation.GeneAnnotation import GenomeAnnotator
+from annotation.GeneAnnotator import GenomeAnnotator
 import pileup.PUtils as putils
 import os
 from Bio import SeqIO
-def pileup_all(yamlf,recalib_stats,bamfile_name,convertMatrix,outdir,gtf_file, ref,ncore=8,lowthres=True):
+def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,gtf_file,ref,stringtie_gtf,ncore=8):
 
     params, p_dict = loadPropFiles(yamlf,recalib_stats)
-    print(p_dict)
+    print("threshold for mod call",p_dict)
 
     if not os.path.exists(bamfile_name):
         print("Could not find file",bamfile_name)
@@ -310,7 +282,7 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,convertMatrix,outdir,gtf_file, r
         os.makedirs(outdir)
 
     print("load annotator")
-    annotator = GenomeAnnotator(gtf_file,convertMatrix, neibormargin=20)
+    annotator = GenomeAnnotator(ref, gtf_file, stringtie_gtf,neibormargin=20)
     print("get interval")
     seq_index = SeqIO.index(ref, "fasta")
 
@@ -320,63 +292,44 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,convertMatrix,outdir,gtf_file, r
     if (os.path.isfile(vcfout)):
         os.remove(vcfout)
 
-    tpm = outdir + "/tpm.txt"
-
-    geneCounterAll = {}
-
     p = Pool(ncore)
-    intervals = putils.getIntervals(convertMatrix)
+    intervalsByKey = annotator.getIntervalsByKey()
 
-    allout = []
-    sampleout = []
-    for intervalKey in intervals:
+    for chrkey in intervalsByKey:
 
-        data = intervalKey.split(":")
-        chr = data[0]
+        chrom,strand = chrkey.split("-")
+        print((chrom,strand))
         if autosomesOnly:
-            if not putils.is_autosome_or_sex_chromosome(chr):
+            if not putils.is_autosome_or_sex_chromosome(chrom):
                 continue
-
-        strand = data[1]
-        ivlist = intervals[intervalKey]
-
-        if chr in seq_index:
-            record = seq_index[chr]
         #
-        ivlist = [((index,chr, strand) + x) for index, x in enumerate(ivlist)]
-        #
-        _pileup = partial(pileup, bamfile_name=bamfile_name, annotator=annotator,
-                          params=params, p_dict=p_dict, record=record,lowthres=lowthres)
+        if chrom in seq_index:
+            record = seq_index[chrom]
+
+        ivlist = intervalsByKey[chrkey]
+        # print(ivlist)
+        # print(ivlist[0])
+        # print(ivlist[0].strand)
+        # print(strand)
+        _pileup = partial(pileup,strand=strand,bamfile_name=bamfile_name, annotator=annotator,
+                          params=params, p_dict=p_dict, record=record)
 
         retlist = p.map(_pileup,ivlist)
-        retlist = sorted(retlist, key=lambda x: x[0])
-        # result, bamTagInfo, geneCounter
+
         outf = open(vcfout, 'a')
-
-
         for tp in retlist:
 
-            index,result,geneCounter = tp
+            result = tp
             for ret in result:
                 line = '\t'.join(map(str, ret))
+                print(line)
                 outf.write(line + '\n')
 
 
-            for key, value in geneCounter.items():
-                if key in geneCounterAll:
-                    geneCounterAll[key] += value
-                else:
-                    geneCounterAll[key] = value
-
-
         outf.close()
-        # break
 
 
-    #calculate tpm
-    putils.calcTpm(geneCounterAll, tpm, convertMatrix)
-    #End
-    # bintervallist = db.from_sequence(intervalsList)  # convert to dask bag
+
 
 import csv
 def csv_to_dict(filename, key_col, value_col,factor=1):
@@ -444,20 +397,20 @@ def loadPropFiles(yamlf,statfile):
 
 
 print("start")
-ref = "/share/reference/hg38.fa"
-gtf_file = '/mnt/share/ueda/RNA004/pipeline/gencode_v44.tsv'
+ref = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
+gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.vM25.annotation.gff3'
 
 # pileup_all(bamfile_name,bamfile_out,convertMatrix,out,gtf_file, ref,tpm,1)
 
 def run():
 
     yamlf="/share/trna/project/nanoModiTune/nanoModiTune.yaml"
-    recalib_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/recalibstat.txt"
-    bamfile_name = "/mnt/share/ueda/RNA004/nanoEvo/U87_inhibitor_bam/BC1.bam"
-    convertMatrix = "/mnt/ssdnas/nanozero/rna/U87_inhibitors_DR14/U87_inhibitors_DR14/U87_inhibitors_DR14.matrix"
-    out = "/mnt/share/ueda/RNA004/nanoEvo/test"
+    recalib_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recalibstat.txt"
+    bamfile_name = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/Adipocyte_2out_recalib.bam"
+    stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.gtf"
+    out = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test"
     ncore =12
-    pileup_all(yamlf,recalib_stats,bamfile_name,convertMatrix,out,gtf_file, ref,ncore=ncore,lowthres=True)
+    pileup_all(yamlf,recalib_stats,bamfile_name,out,gtf_file,ref,stringtie_gtf,ncore=ncore)
 
 
 # run()
