@@ -66,7 +66,7 @@ def filter(invcf,outvcf,nn_wight,knowndir,genome):
 
     classification(invcf, outvcf, nn_wight,knowndir,genome)
 
-from summary.SummaryAll import summary
+from summary.SummaryAll_old import summary
 @cmd.command()
 @click.option('-vcf', '--vcf')
 @click.option('-tpm', '--tpm')

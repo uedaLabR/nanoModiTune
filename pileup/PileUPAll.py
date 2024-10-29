@@ -307,6 +307,7 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,gtf_file,ref,stringtie_gt
             record = seq_index[chrom]
 
         ivlist = intervalsByKey[chrkey]
+        # ivlist = ivlist[0]
         # print(ivlist)
         # print(ivlist[0])
         # print(ivlist[0].strand)

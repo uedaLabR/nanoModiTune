@@ -342,5 +342,5 @@ from functools import partial
 import cProfile
 
 wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
-wrapped_function()
+# wrapped_function()
 # cProfile.run('wrapped_function()')

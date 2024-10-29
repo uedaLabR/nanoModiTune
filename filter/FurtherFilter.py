@@ -321,8 +321,8 @@ def run():
 
     checkpoint_path = "/mnt/share/ueda/RNA004/resource/model_weights_5.h5"
 
-    input = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/unfilter_result.vcf"
-    output = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/result_filter.vcf"
+    input = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test/unfilter_result.vcf"
+    output = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test/result_filter.vcf"
     knowndir = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites"
     classification(input,output,checkpoint_path,knowndir,genome="hg38")
 
