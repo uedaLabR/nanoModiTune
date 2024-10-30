@@ -397,7 +397,7 @@ def loadPropFiles(yamlf,statfile):
     return params,p_dict
 
 
-print("start")
+# print("start")
 ref = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
 gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.vM25.annotation.gff3'
 

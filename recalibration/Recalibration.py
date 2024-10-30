@@ -227,6 +227,7 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
     Perform recalibration on the BAM file using reference and statistics.
 
     """
+    print("start recalib")
     datadict = {}
     recalibrator = Recalib()
     recalibrator.loadStats(recalib_db)
