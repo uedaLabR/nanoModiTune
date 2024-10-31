@@ -137,7 +137,7 @@ class GenomeAnnotator:
     def __init__(self, ref,gtf_file,stringtie_gtf,neibormargin=20):
 
             self.genes = BedTool(gtf_file)
-            if stringtie_gtf!=None:
+            if stringtie_gtf!=None and len(stringtie_gtf)>0:
                 self.stringtie_genes = BedTool(stringtie_gtf)
 
             def is_gene_or_transcript(feature):

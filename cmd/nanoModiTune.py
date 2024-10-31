@@ -51,6 +51,7 @@ from pileup.PileUPAll import pileup_all
 @click.option('-ncore', '--ncore', required=True)
 def pileup(property,recalib_stats,inbam,outdir, ref, gtf_file, stringtie_gtf,ncore):
 
+    # pileup_all(yamlf, recalib_stats, bamfile_name, outdir, gtf_file, ref, stringtie_gtf, ncore=8):
     pileup_all(property, recalib_stats, inbam, outdir, ref, gtf_file,  stringtie_gtf, ncore=int(ncore))
 
 

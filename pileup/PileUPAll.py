@@ -269,7 +269,7 @@ from annotation.GeneAnnotator import GenomeAnnotator
 import pileup.PUtils as putils
 import os
 from Bio import SeqIO
-def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,gtf_file,ref,stringtie_gtf,ncore=8):
+def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,ref, gtf_file,  stringtie_gtf,ncore=8):
 
     params, p_dict = loadPropFiles(yamlf,recalib_stats)
     print("threshold for mod call",p_dict)
