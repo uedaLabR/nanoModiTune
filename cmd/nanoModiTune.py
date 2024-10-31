@@ -35,6 +35,7 @@ from recalibration.Recalibration import run_recalib
 @click.option('-out_stats', '--out_stats', required=True)
 def recalib(inbam, outbam, ref, recalib_db, out_stats):
 
+    print("recalib")
     run_recalib(inbam, outbam, ref, recalib_db, out_stats)
 
 
