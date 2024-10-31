@@ -411,7 +411,7 @@ def run():
     stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.gtf"
     out = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test"
     ncore =12
-    pileup_all(yamlf,recalib_stats,bamfile_name,out,gtf_file,ref,stringtie_gtf,ncore=ncore)
+    pileup_all(yamlf,recalib_stats,bamfile_name,out,ref,gtf_file,stringtie_gtf,ncore=ncore)
 
 
 # run()

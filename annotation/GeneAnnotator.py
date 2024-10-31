@@ -74,8 +74,9 @@ class GeneHolder:
 
         for gene in genes:
 
-            if (gene[2]=="gene"):
-                self.addMainGene(gene)
+            if len(gene)>2:
+                if (gene[2]=="gene"):
+                    self.addMainGene(gene)
 
             self.addGene(gene)
 
@@ -135,6 +136,9 @@ class GenomeAnnotator:
 
 
     def __init__(self, ref,gtf_file,stringtie_gtf,neibormargin=20):
+
+            print(gtf_file)
+            print(stringtie_gtf)
 
             self.genes = BedTool(gtf_file)
             if stringtie_gtf!=None and len(stringtie_gtf)>0:
