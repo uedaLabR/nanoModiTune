@@ -28,11 +28,11 @@ def cmd():
 
 from recalibration.Recalibration import run_recalib
 @cmd.command()
-@click.option('-inbam', '--inbam')
-@click.option('-outbam', '--outbam')
-@click.option('-ref', '--ref')
-@click.option('-recalib_db', '--recalib_db')
-@click.option('-out_stats', '--out_stats')
+@click.option('-inbam', '--inbam', required=True)
+@click.option('-outbam', '--outbam', required=True)
+@click.option('-ref', '--ref', required=True)
+@click.option('-recalib_db', '--recalib_db', required=True)
+@click.option('-out_stats', '--out_stats', required=True)
 def recalib(inbam, outbam, ref, recalib_db, out_stats):
 
     run_recalib(inbam, outbam, ref, recalib_db, out_stats)
@@ -40,14 +40,14 @@ def recalib(inbam, outbam, ref, recalib_db, out_stats):
 
 from pileup.PileUPAll import pileup_all
 @cmd.command()
-@click.option('-prop', '--property')
-@click.option('-recalib_stats','--recalib_stats')
-@click.option('-inbam', '--inbam')
-@click.option('-outdir', '--outdir')
-@click.option('-ref', '--ref')
-@click.option('-gtf_file', '--gtf_file')
+@click.option('-prop', '--property', required=True)
+@click.option('-recalib_stats','--recalib_stats', required=True)
+@click.option('-inbam', '--inbam', required=True)
+@click.option('-outdir', '--outdir', required=True)
+@click.option('-ref', '--ref', required=True)
+@click.option('-gtf_file', '--gtf_file', required=True)
 @click.option('-stringtie_gtf', '--stringtie_gtf')
-@click.option('-ncore', '--ncore')
+@click.option('-ncore', '--ncore', required=True)
 def pileup(property,recalib_stats,inbam,outdir, ref, gtf_file, stringtie_gtf,ncore):
 
     pileup_all(property, recalib_stats, inbam, outdir, ref, gtf_file,  stringtie_gtf, ncore=int(ncore))
