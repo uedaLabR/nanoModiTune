@@ -91,4 +91,6 @@ def train(m6Apath,m5cpath,psudepath,fp_ivtpath,ref,weightpath):
 
    trainNN(m6Apath,m5cpath,psudepath,fp_ivtpath,ref,weightpath)
 
+if __name__ == "__main__":
+    cmd()
 
