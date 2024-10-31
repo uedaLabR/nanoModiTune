@@ -39,6 +39,7 @@ class Recalib:
         files = glob.glob(f"{stats_dir}/*.csv")
 
         for file in files:
+            print("loading",file)
             modkey = ""
             if "m6A" in file:
                 modkey = "a"
