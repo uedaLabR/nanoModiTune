@@ -110,13 +110,13 @@ def convertToGenomepos(x,refposs):
         conv = conv+1
     return conv
 
-def sorfby(modkeys):
+def sortby(modkeys):
 
     lst = []
     lst.extend(modkeys)
 
-    desired_order_first = ['A', 'T', 'C']
-    desired_order_third = [17596, 'a', 17802, 'm']
+    desired_order_first = ['A', 'C', 'T']
+    desired_order_third = [17596, 'a', 'm',17802,]
 
     order_dict_first = {value: index for index, value in enumerate(desired_order_first)}
     order_dict_third = {value: index for index, value in enumerate(desired_order_third)}
@@ -264,18 +264,19 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                 index = 0
                 if modbase is not None:
                     modkeys = list(modbase.keys())
-                    modkeys = sorfby(modkeys)
+                    modkeys = sortby(modkeys)
+                    print("mk2", modkeys)
                     for modkey in modkeys:
 
                         modlist = modbase[modkey]
                         processed_tuples = [(convertToGenomepos(x, refposs),x, y) for x, y in modlist]
-                        refnuc = modkey[0]
+                        refnuc = str(modkey[0])
 
                         for tp in processed_tuples:
 
                             pos,localpos,originalscore = tp
 
-                            sixMer = getSixMer(genome,read,pos,localpos,refposs)
+                            sixMer = getSixMer(genome,read,pos,localpos,refposs).upper()
                             # print(referencename,not read.is_reverse,pos,sixMer)
 
                             if len(sixMer)==6:
