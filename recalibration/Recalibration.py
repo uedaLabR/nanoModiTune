@@ -261,7 +261,7 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                 ML = read.get_tag("ML")
                 orginal_array = copy.deepcopy(ML)
 
-                index = -1
+                index = 0
                 if modbase is not None:
                     modkeys = list(modbase.keys())
                     modkeys = sorfby(modkeys)
@@ -276,6 +276,8 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                             pos,localpos,originalscore = tp
 
                             sixMer = getSixMer(genome,read,pos,localpos,refposs)
+                            # print(referencename,not read.is_reverse,pos,sixMer)
+
                             if len(sixMer)==6:
                                 recalibscore = recalibrator.getModifiedScore(sixMer,refnuc, modkey[2], originalscore)
                                 unrefB = False
@@ -335,7 +337,7 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
 
 # Example execution
 refs = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
-inbam = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.bam"
+inbam = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_1/Adipocyte_1/Adipocyte_1_recalib.bam"
 outbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/Adipocyte_2out_recalib.bam"
 recalib_db = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats"
 out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recalibstat.txt"
@@ -343,6 +345,6 @@ out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recali
 from functools import partial
 import cProfile
 
-wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
+# wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
 # wrapped_function()
 # cProfile.run('wrapped_function()')

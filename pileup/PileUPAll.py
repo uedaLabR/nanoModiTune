@@ -150,6 +150,11 @@ def judgePval(params, depth,  q_list, pthres):
     return p_value,score
 
 
+def refInConsistanse(modref,REF):
+    REF = REF.upper()
+    print(modref,REF)
+    return modref != REF
+
 def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
 
     result = []
@@ -164,7 +169,9 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
             if modbase is not None:
 
                 modkeys = modbase.keys()
+                mdict = {}
                 for modkey in modkeys:
+                    mdict[str(modkey[2])] = modkey[0]
                     modlist = modbase[modkey]
                     processed_tuples = [(convertToGenomepos(x, refposs), y) for x, y in modlist]
                     for tp in processed_tuples:
@@ -212,6 +219,11 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
             initfilterFail = initFilterFail(depth, ratio,modCnt,params)
             if initfilterFail:
                 continue
+            fmer, mid5strand = getSixmer(record, chrom, gpos, strand)
+            REF = fmer[3:4]
+            if (mkey in mdict) and refInConsistanse(mdict[mkey],REF):
+                continue
+
             # binomial test
             p_value,score = judgePval(params, depth,  q_list,pthres)
             statsTestOK = (p_value<0.01) or (p_value==0)
@@ -222,7 +234,7 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
                 annoret = annotator.annotate_genomic_position(chrom, strand, gpos)
                 neighborseq = getNeighborSeq(record, chrom, gpos, strand)
 
-            fmer, mid5strand = getSixmer(record, chrom, gpos, strand)
+
             # depth, ratio, mostMismatchBase, mostMismatchCnt, diffcnt, base_counts, maints = ret
             formatted_af = f"{ratio:.4f}"
             info = "STRAND="+str(strand) +",AF=" + formatted_af + ",DP=" + str(depth) \
@@ -234,7 +246,7 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
             if annoret is not None:
                 info = info +"," + annoret
 
-            REF = fmer[3:4]
+
             ALT = mkey
             tp = (chrom, gpos, ".", REF, ALT, score, statsTestOK, info)
             print(tp)
@@ -253,7 +265,7 @@ def pileup(interval,strand,bamfile_name,annotator,params,p_dict,record):
     readlist = []
     for read in bamfile.fetch(chrom, start, end):
 
-        if strand == (not read.is_reverse):
+        if strand != (not read.is_reverse):
             continue
 
         refposs = read.get_reference_positions(full_length=True)
@@ -307,11 +319,7 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,ref, gtf_file,  stringtie
             record = seq_index[chrom]
 
         ivlist = intervalsByKey[chrkey]
-        # ivlist = ivlist[0]
-        # print(ivlist)
-        # print(ivlist[0])
-        # print(ivlist[0].strand)
-        # print(strand)
+
         _pileup = partial(pileup,strand=strand,bamfile_name=bamfile_name, annotator=annotator,
                           params=params, p_dict=p_dict, record=record)
 
@@ -407,8 +415,8 @@ def run():
 
     yamlf="/share/trna/project/nanoModiTune/nanoModiTune.yaml"
     recalib_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recalibstat.txt"
-    bamfile_name = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/Adipocyte_2out_recalib.bam"
-    stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.gtf"
+    bamfile_name = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_1/Adipocyte_1/Adipocyte_1_recalib.bam"
+    stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_1/Adipocyte_1/Adipocyte_1.gtf"
     out = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test"
     ncore =12
     pileup_all(yamlf,recalib_stats,bamfile_name,out,ref,gtf_file,stringtie_gtf,ncore=ncore)
