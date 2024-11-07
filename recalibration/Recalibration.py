@@ -223,6 +223,7 @@ def getSixMer(genome,read,pos,localpos,refposs):
 
 
 import copy
+import os
 def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
     """
     Perform recalibration on the BAM file using reference and statistics.
