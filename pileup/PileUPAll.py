@@ -287,8 +287,18 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,ref, gtf_file,  stringtie
     print("threshold for mod call",p_dict)
 
     if not os.path.exists(bamfile_name):
-        print("Could not find file",bamfile_name)
-        return
+        print("Could not find bam file",bamfile_name)
+        sys.exit(1)
+    if not os.path.exists(ref):
+        print("Could not find ref file",ref)
+        sys.exit(1)
+    if not os.path.exists(recalib_stats):
+        print("Could not find recalib stats file",recalib_stats)
+        sys.exit(1)
+    if not os.path.exists(recalib_stats):
+        print("Could not find gtf_file file",gtf_file)
+        sys.exit(1)
+
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)

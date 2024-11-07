@@ -231,6 +231,11 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
     print("start recalib",inbam, outbam, refs, recalib_db, out_stats)
     datadict = {}
     recalibrator = Recalib()
+
+    if not os.path.exists(recalib_db):
+        print("Error: recalib_db path not found:", recalib_db_path)
+        sys.exit(1)
+
     recalibrator.loadStats(recalib_db)
     fasta = pysam.FastaFile(refs)
     lastref = ""
