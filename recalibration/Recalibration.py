@@ -298,11 +298,11 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                                         if recalibscore<0:
                                             unref+=1
                                             unrefB = True
-                                            #recalibscore=0
-                                            #do not do anything
+                                            recalibscore=0
+                                            #set quality zero for un ref
                                         else:
                                             recalibbase+=1
-                                            ML[index] = recalibscore
+                                        ML[index] = recalibscore
 
                                     else:
                                         unchange+=1
