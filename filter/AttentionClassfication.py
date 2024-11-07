@@ -284,4 +284,4 @@ fp_ivtpath = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilt
 ref = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/bam_pass/U87ivt.fa"
 outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
 
-trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
+# trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
