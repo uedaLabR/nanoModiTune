@@ -317,6 +317,8 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                                             datadict[kkey] = counter
 
                             index+=1
+                            if index>=len(ML):
+                                break
 
                 read.set_tag("ML",ML)
                 read.set_tag("XM", orginal_array)
