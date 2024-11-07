@@ -89,10 +89,12 @@ class Recalib:
         # print("returnning recalib score",originalscore,recalib)
         return recalib
 
-    def getModifiedScore(self, kmer,refnuc, mod, originalscore):
+    def getModifiedScore(self, pos,strand,kmer,refnuc, mod, originalscore):
 
         if kmer[3]!=refnuc:
+            # print("Err",pos,strand,kmer,refnuc,mod)
             return -1
+        # print("OK", pos,strand, kmer, refnuc, mod)
         kkey = str(mod) + "_" + kmer
         if kkey in self.lookuptable:
             return self.getRecalibScore(self.lookuptable[kkey], originalscore)
@@ -122,7 +124,7 @@ def sortby(modkeys):
     order_dict_third = {value: index for index, value in enumerate(desired_order_third)}
     sorted_data = sorted(lst, key=lambda x: (
     order_dict_first.get(x[0], float('inf')), order_dict_third.get(x[2], float('inf'))))
-
+    # print(sorted_data)
     return sorted_data
 
 import csv
@@ -286,7 +288,8 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                             # print(referencename,not read.is_reverse,pos,sixMer)
 
                             if len(sixMer)==6:
-                                recalibscore = recalibrator.getModifiedScore(sixMer,refnuc, modkey[2], originalscore)
+                                strand = not read.is_reverse
+                                recalibscore = recalibrator.getModifiedScore(pos,strand,sixMer,refnuc, modkey[2], originalscore)
                                 unrefB = False
                                 if originalscore == ML[index]:
                                     #if not something wrong
@@ -295,11 +298,11 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                                         if recalibscore<0:
                                             unref+=1
                                             unrefB = True
-                                            recalibscore=0
+                                            #recalibscore=0
+                                            #do not do anything
                                         else:
                                             recalibbase+=1
-
-                                        ML[index] = recalibscore
+                                            ML[index] = recalibscore
 
                                     else:
                                         unchange+=1
