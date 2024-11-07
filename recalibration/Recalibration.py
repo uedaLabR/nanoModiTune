@@ -265,7 +265,7 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                 if modbase is not None:
                     modkeys = list(modbase.keys())
                     modkeys = sortby(modkeys)
-                    print("mk2", modkeys)
+                    # print("mk2", modkeys)
                     for modkey in modkeys:
 
                         modlist = modbase[modkey]
