@@ -112,20 +112,7 @@ def convertToGenomepos(x,refposs):
         conv = conv+1
     return conv
 
-def sortby(modkeys):
 
-    lst = []
-    lst.extend(modkeys)
-
-    desired_order_first = ['A', 'C', 'T']
-    desired_order_third = [17596, 'a', 'm',17802,]
-
-    order_dict_first = {value: index for index, value in enumerate(desired_order_first)}
-    order_dict_third = {value: index for index, value in enumerate(desired_order_third)}
-    sorted_data = sorted(lst, key=lambda x: (
-    order_dict_first.get(x[0], float('inf')), order_dict_third.get(x[2], float('inf'))))
-    # print(sorted_data)
-    return sorted_data
 
 import csv
 def write_string_and_data_to_csv(file_path,data):
@@ -222,7 +209,36 @@ def getSixMer(genome,read,pos,localpos,refposs):
 
     return smer
 
+def toInt(s):
+    try:
+        return int(s)
+    except ValueError:
+        return s
 
+
+def sortbyMMTagKeyInfo(modkeys,mm_tag):
+
+    order_mapping ={}
+    modifications = mm_tag.split(";")
+    n=0
+    for mod in modifications:
+        mod = mod.split(",")[0].replace(".","")
+        if mod:
+            if '+' in mod:
+                base_mod_strand, modkey = mod.split("+", 1)
+            elif '-' in mod:
+                base_mod_strand, modkey = mod.split("-", 1)
+            else:
+                continue
+            order_mapping[toInt(modkey)] = n
+            n+=1
+
+    if len(order_mapping)==0:
+        #MM tag parse err, shold not happen
+        order_mapping = {17596: 0, 'a': 1, 'm': 2, 17802: 3}
+
+    sorted_tuples = sorted(modkeys, key=lambda x: order_mapping.get(x[2], float('inf')))
+    return sorted_tuples
 
 import copy
 import os
@@ -259,7 +275,7 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
             # print(readcnt,referencename,read)
             if referencename != lastref:
                 genome = fasta.fetch(referencename,0,None)
-                print("load",referencename)
+                # print("load",referencename)
             lastref = referencename
 
             if read.has_tag("MM"):
@@ -268,17 +284,21 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                 modbase = read.modified_bases
                 ML = read.get_tag("ML")
                 orginal_array = copy.deepcopy(ML)
-
+                # print(read.get_tag("MM"))
+                # print(len(ML))
                 index = 0
                 if modbase is not None:
                     modkeys = list(modbase.keys())
-                    modkeys = sortby(modkeys)
-                    # print("mk2", modkeys)
+                    mm_tag = read.get_tag("MM")
+                    # print("mk", modkeys)
+                    modkeys = sortbyMMTagKeyInfo(modkeys,mm_tag)
+                    # print("mk p", modkeys)
                     for modkey in modkeys:
 
                         modlist = modbase[modkey]
                         processed_tuples = [(convertToGenomepos(x, refposs),x, y) for x, y in modlist]
                         refnuc = str(modkey[0])
+                        # print(len(processed_tuples))
 
                         for tp in processed_tuples:
 
