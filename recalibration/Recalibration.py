@@ -318,11 +318,12 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                                         if recalibscore<0:
                                             unref+=1
                                             unrefB = True
-                                            recalibscore=0
+                                            # recalibscore=0
                                             #set quality zero for un ref
                                         else:
                                             recalibbase+=1
-                                        ML[index] = recalibscore
+                                            # set new qual
+                                            ML[index] = recalibscore
 
                                     else:
                                         unchange+=1
@@ -376,6 +377,6 @@ out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recali
 from functools import partial
 import cProfile
 
-wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
-wrapped_function()
-cProfile.run('wrapped_function()')
+# wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
+# wrapped_function()
+# cProfile.run('wrapped_function()')
