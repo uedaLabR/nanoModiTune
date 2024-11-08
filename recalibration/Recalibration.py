@@ -284,8 +284,8 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                 modbase = read.modified_bases
                 ML = read.get_tag("ML")
                 orginal_array = copy.deepcopy(ML)
-                # print(read.get_tag("MM"))
-                # print(len(ML))
+                if not ML:
+                    continue
                 index = 0
                 if modbase is not None:
                     modkeys = list(modbase.keys())
@@ -302,11 +302,11 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
 
                         for tp in processed_tuples:
 
+                            if index >= len(ML):
+                                break
+
                             pos,localpos,originalscore = tp
-
                             sixMer = getSixMer(genome,read,pos,localpos,refposs).upper()
-                            # print(referencename,not read.is_reverse,pos,sixMer)
-
                             if len(sixMer)==6:
                                 strand = not read.is_reverse
                                 recalibscore = recalibrator.getModifiedScore(pos,strand,sixMer,refnuc, modkey[2], originalscore)
@@ -340,8 +340,7 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                                             datadict[kkey] = counter
 
                             index+=1
-                            if index>=len(ML):
-                                break
+
 
                 read.set_tag("ML",ML)
                 read.set_tag("XM", orginal_array)
@@ -377,6 +376,6 @@ out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recali
 from functools import partial
 import cProfile
 
-# wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
-# wrapped_function()
-# cProfile.run('wrapped_function()')
+wrapped_function = partial(run_recalib, inbam, outbam, refs, recalib_db, out_stats)
+wrapped_function()
+cProfile.run('wrapped_function()')
