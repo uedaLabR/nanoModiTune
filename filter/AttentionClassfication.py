@@ -38,7 +38,6 @@ def train(data,weightpath,epoch,outhistory):
 
     y_train = to_categorical(y_train, num_classes=6)
     y_test = to_categorical(y_test, num_classes=6)
-
     X_train = np.array(X_train)
     y_train = np.array(y_train)
 
@@ -107,9 +106,9 @@ def train(data,weightpath,epoch,outhistory):
 # data.append(("GCCTGCCCCCGCTAACCGGCTTTTTGCCCAAATGGGCCATT",1))
 # data.append(("TTCATCGGCGTAAATCTAACTTTCTTCCCACAACACTTTCT",1))
 
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import random
-
 
 def fetch_random_sequences(fasta, chromosome, sequence_length=40, number_of_sequences=5):
 
@@ -284,4 +283,4 @@ fp_ivtpath = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilt
 ref = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/bam_pass/U87ivt.fa"
 outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
 
-# trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
+trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)

@@ -1,6 +1,8 @@
-depth_min: 10
-ratio_min: 0.05
-support_read_min: 4
+depth_min: 20
+ratio_min: 0.1
+support_read_min: 6
 p_null: 0.03
 lowqual_parcentile: 10
-min_mod_qual: 0.4
+min_mod_qual: 0.5
+min_mod_qual_high: 0.75
+p_value_max: 0.01

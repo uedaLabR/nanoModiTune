@@ -55,8 +55,6 @@ def pileup(property,recalib_stats,inbam,outdir, ref, gtf_file, stringtie_gtf,nco
     pileup_all(property, recalib_stats, inbam, outdir, ref, gtf_file,  stringtie_gtf, ncore=int(ncore))
 
 
-
-
 from filter.FurtherFilter import classification
 @cmd.command()
 @click.option('-invcf', '--invcf')
@@ -68,16 +66,14 @@ def filter(invcf,outvcf,nn_wight,knowndir,genome):
 
     classification(invcf, outvcf, nn_wight,knowndir,genome)
 
-from summary.SummaryAll_old import summary
+from summary.SummaryAll import summary
 @cmd.command()
 @click.option('-vcf', '--vcf')
-@click.option('-tpm', '--tpm')
-@click.option('-genetsv', '--genetsv')
+@click.option('-gtf', '--gtf')
 @click.option('-out', '--out')
-def summaryall(vcf,tpm,genetsv,out):
+def summaryall(vcf,gtf,out):
 
-   summary(vcf, tpm, genetsv, out)
-
+   summary(vcf, gtf, out)
 
 
 from filter.AttentionClassfication import trainNN

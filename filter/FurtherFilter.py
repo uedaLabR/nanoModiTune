@@ -13,6 +13,7 @@ Flg_Y = 5
 import glob
 def loadKnownPos(knownPosDir,genome):
 
+
     knownPos = {}
     files = glob.glob(knownPosDir)
     # print(files)
@@ -21,6 +22,8 @@ def loadKnownPos(knownPosDir,genome):
         if genome in file:
 
             _loadKnownPos(knownPos, file)
+
+    # loadEditingFile(knownPos,editingfile)
     return knownPos
 
 def getFlg(path):
@@ -41,10 +44,24 @@ def _loadKnownPos(knownPos,path):
     bed_df = pd.read_csv(path, header=None, sep='\t')
     for index, row in bed_df.iterrows():
         chr = row[0]
-        pos = row[1]
+        pos = row[2]
         key = str(chr) + ":" + str(pos)
         knownPos[key] = flg
 
+import gzip
+def loadEditingFile(knownPos,path):
+
+    flg = Flg_I
+    with gzip.open(path,'rt', encoding='utf-8') as inst:
+        cnt = 0
+        for line in inst:
+            if cnt > 0:
+                data = (line.split("\t"))
+                key = str(data[1]) + ":" + str(data[2])
+                knownPos[key] = flg
+            cnt+=1
+            if cnt % 10000==0:
+                print(cnt)
 
 
 def printout_unchange(bed_df,output):
@@ -85,23 +102,207 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.utils import to_categorical
 import pandas as pd
 import os
+import re
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+
+def isDrach(qseq):
+
+    # Define the regular expression pattern for DRACH motif
+    drach_pattern = re.compile(r"[AGUT][AG]AC[AUCUT]", re.IGNORECASE)
+
+    # Search for the pattern in the input sequence
+    return bool(drach_pattern.search(qseq))
+
+
+def isRepresentitiveY(qseq):
+
+    seqs = ["TTTTT", "GTTCG", "GTTCC", "GTTCA", "GTTCT",
+            "TGTAG", "TCTAG", "GGTGC", "GCTGA", "CGTGA",
+            "AGTGG", "TGTGG", "GGTGG"]
+
+
+    return any(motif in qseq for motif in seqs)
+
+def cgRich(qseq,threshold=0.7):
+
+    qseq = qseq.upper()
+    # Count the occurrences of C and G in the sequence
+    cg_count = qseq.count('C') + qseq.count('G')
+    # Calculate the CG content as a proportion of the total length
+    cg_ratio = cg_count / len(qseq) if len(qseq) > 0 else 0
+
+    # Check if the CG content meets or exceeds the threshold
+    return cg_ratio >= threshold
+
+def isMotief(called_flg,info):
+
+    qseq = None
+    ifs = info.split(',')
+    for i in ifs:
+        if "SEQ=" in i:
+            print(i)
+            qseq0 = i.replace("SEQ=", "")
+            if len(qseq0) > 10:
+                qseq = qseq0[17:23]
+    if qseq == None:
+        return False
+    if called_flg == Flg_m6A:
+        return isDrach(qseq)
+    elif called_flg == Flg_Y:
+        return isRepresentitiveY(qseq)
+    elif called_flg == Flg_m5C:
+        return cgRich(qseq)
+
+    return False
+
+def group_by_position(dataHolder, distance=6):
+    """
+    Groups items in dataHolder by chr, strand, and within a specified distance for pos.
+
+    Parameters:
+    dataHolder (list of tuples): List of tuples where each tuple represents
+                                 (chr, strand, pos, called_flg, filteredout, predict_flg, knownAndFlgOk, known_motif, row).
+    distance (int): The maximum distance (in bases) for grouping items by pos.
+
+    Returns:
+    list of lists: A list of grouped items, where each group is a list of tuples.
+    """
+    # Sort dataHolder by chr, strand, pos
+    dataHolder = sorted(dataHolder, key=lambda x: (x[0], x[1], x[2]))
+
+    grouped_data = []
+    current_group = []
+    currentset = set()
+
+    for item in dataHolder:
+        # Unpack item
+        chr, strand, pos, called_flg, filteredout, predict_flg, knownAndFlgOk, known_motif, row = item
+
+        if not current_group:
+            # Start a new group
+            current_group.append(item)
+            currentset.add(called_flg)
+        else:
+            # Compare positions
+            last_pos = current_group[-1][2]
+            current_pos = pos
+
+            # If conditions match, add to current group
+            if (item[0] == current_group[-1][0] and item[1] == current_group[-1][1]
+                    and (current_pos - last_pos) <= distance and called_flg not in currentset):
+                current_group.append(item)
+                currentset.add(called_flg)
+            else:
+                # Start a new group
+                grouped_data.append(current_group)
+                current_group = [item]
+                currentset = {called_flg}  # Start fresh set with current flag
+
+    # Append the last group if not empty
+    if current_group:
+        grouped_data.append(current_group)
+
+    return grouped_data
+
+def setfilter(group):
+    """
+    Sets the filter status for each item in the group based on known flags and motifs.
+
+    Parameters:
+    group (list of tuples): List of tuples representing each data item in the group,
+                            including information about chr, strand, pos, called_flg,
+                            filteredout, predict_flg, knownAndFlgOk, known_motif, and row.
+    """
+    knownidx = []
+    knownmotiefL = []
+    drachExist = False
+
+    if len(group) ==1:
+        return
+
+    # Pass 1: Identify known flags, motifs, and check for drachExist
+    for n, (chr, strand, pos, called_flg, filteredout, predict_flg, knownAndFlgOk, known_motif, row) in enumerate(group):
+        if knownAndFlgOk:
+            knownidx.append(n)
+        if known_motif:
+            knownmotiefL.append(n)
+            if called_flg == Flg_m6A:
+                drachExist = True
+
+    # Pass 2: Set filter status based on conditions
+    for n, (chr, strand, pos, called_flg, filteredout, predict_flg, knownAndFlgOk, known_motif, row) in enumerate(group):
+        setTrue = False
+
+        # If drach exists, set m6A and neighboring Y to True
+        if drachExist and called_flg == Flg_Y:
+            row[6] = True
+            setTrue = True
+
+        # Set True if current index is in known indexes or known motifs
+        if n in knownidx or n in knownmotiefL:
+            row[6] = True
+            setTrue = True
+
+        # If none of the above conditions are met, set to False
+        if not setTrue:
+            row[6] = False
+
+
+
+
+def checkFlgAndPoliNuc(called_flg,predict_flg,strand,info,filter_afthres):
+
+    if called_flg != predict_flg:
+        return True
+
+    qseq = None
+    ifs = info.split(',')
+    af = 0
+    for i in ifs:
+        if "SEQ=" in i:
+            # print(i)
+            qseq0 = i.replace("SEQ=", "")
+            if len(qseq0) > 10:
+                qseq = qseq0[18:22]
+
+        if "AF=" in i:
+            afs = i.replace("AF=", "")
+            if len(afs) > 0:
+                af = float(af)
+
+
+    if qseq == None:
+        return False
+
+    if af < filter_afthres:
+        return True
+
+    if  called_flg == Flg_m5C:
+        cc = qseq.count('C')
+        if cc >=2:
+            return True
+
+    if  called_flg == Flg_m5C:
+        cc = qseq.count('T')
+        if cc >=2:
+            return True
+    return False
+
+
 
 def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
 
     model = NNModel.getModel()
     model.summary()
     model.compile()
-    model.load_weights('/mnt/share/ueda/RNA004/resource/test.weights.h5')
+    model.load_weights(checkpoint_path)
     # print(input,output,checkpoint_path,m5Cpath,psudepath)
 
     knownPos = loadKnownPos(knowndir,genome)
     print(knownPos.keys())
-
     bed_df = pd.read_csv(input, header=None, sep='\t')
-    ccnt = 0
-    tcnt = 0
 
     tuple_list = []
     poslist = []
@@ -128,7 +329,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
         strand = True
         for i in ifs:
             if "SEQ=" in i:
-                print(i)
+                # print(i)
                 qseq0 = i.replace("SEQ=", "")
                 if len(qseq0) > 10:
                     qseq = qseq0[1:]
@@ -166,7 +367,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
         key = poslist[n]
         posdict[key] = pre
 
-    edited_rows = []
+    dataHolder = []
     for index, row in bed_df.iterrows():
 
         predict_flg = -1
@@ -176,8 +377,9 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
         pos = row[1]
         REF = row[3]
         ALT = row[4]
-
         info = row[7]
+
+        strand = "STRAND=True" in info
 
         key0 = str(chr) + ":" + str(pos)
         if key0 in posdict:
@@ -188,6 +390,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
             known_flg = knownPos[key0]
             inKnownDB = True
 
+        called_flg = getCalledFlg(ALT)
         filteredout = False
         if known_flg < 0:
             if predict_flg == Flg_Error:
@@ -196,33 +399,63 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
             if predict_flg == Flg_other:
                 row[6] = False # Filter out
                 filteredout = True
-        called_flg = getCalledFlg(ALT)
 
-        if inKnownDB and (known_flg ==called_flg) and filteredout == True :
-            row[6] = True
-            row[7] = info+",knownSites=True"
+        filter_afthres = 0.2
+        #For m5C, Y require flg match, and non polynuc
+        if called_flg == Flg_m5C or called_flg == Flg_Y:
+            checkNG = checkFlgAndPoliNuc(called_flg,predict_flg,strand,info,filter_afthres)
+            if checkNG:
+                row[6] = False  # Filter out
+                filteredout = True
 
-        if filter:
+        #
+        knownAndFlgOk = False
+        known_motif = False
+        if filteredout == True:
+
+            knownAndFlgOk = inKnownDB and (known_flg == called_flg)
+            if knownAndFlgOk:
+                row[6] = True
+                row[7] = info + ",knownSites=True"
+                filteredout = False
+            known_motif = isMotief(called_flg, info)
+            if known_motif:
+                row[6] = True
+                row[7] = info + ",knownMotif=True"
+                filteredout = False
+
+        if row[6] == True:
+            dataHolder.append((chr,strand,pos,called_flg,filteredout,predict_flg,knownAndFlgOk,known_motif,row))
+
+    #sort
+    grouped_data = group_by_position(dataHolder)
+    #filter neighbor
+    edited_rows = []
+    for group in grouped_data:
+
+        setfilter(group)
+        for data in group:
+            row = data[8]
             edited_rows.append(row)
+
 
     title = ['#CHR','POS','ID','REF','ALT','QUAL','FILTER','INFO']
     # outall = os.path.splitext(output)[0]+"_all.vcf"
     new_df = pd.DataFrame(edited_rows)
     new_df.columns = title
-    # new_df.to_csv(outall, sep='\t', index=False)
-    new_df2 = new_df[new_df.iloc[:, 6] == True]
-    new_df2.columns = title
-    new_df2.to_csv(output, sep='\t', index=False)
+    new_df.to_csv(output, sep='\t', index=False)
+    # new_df2 = new_df[new_df.iloc[:, 6] == True]
+    # new_df2.columns = title
+    # new_df2.to_csv(output, sep='\t', index=False)
 
 
 def run():
 
     checkpoint_path =  "/mnt/share/ueda/RNA004/resource/ntmodel.weights.h5"
-    input = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
+    input = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test/unfilter_result.vcf"
     output = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     knowndir = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human*.bed"
+
     classification(input,output,checkpoint_path,knowndir,genome="hg38")
-
-
 
 # run()

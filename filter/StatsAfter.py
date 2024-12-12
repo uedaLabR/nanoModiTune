@@ -7,11 +7,11 @@ Flg_I = 3
 Flg_m5C = 4
 Flg_Y = 5
 
-def loadKnownPos(knownPosDir,genome):
+def loadKnownPos(knownPos,knowndir, genome):
 
-    knownPos = {}
+    # loadEditingFile(knownPos, editingfile)
     counts = {}
-    files = glob.glob(knownPosDir)
+    files = glob.glob(knowndir)
     print(files)
     for file in files:
 
@@ -43,7 +43,7 @@ def _loadKnownPos(knownPos,flg,path):
     cnt = 0
     for index, row in bed_df.iterrows():
         chr = row[0]
-        pos = row[1]
+        pos = row[2]
         key = str(chr) + ":" + str(pos)
         knownPos[key] = flg
         cnt+=1
@@ -55,6 +55,7 @@ def stats(vcf1,knownPos):
     counter = {}
     counterknown = {}
     cnt = 0
+    drachcnt = 0
     for index, row in bed_df.iterrows():
 
         chr = row[0]
@@ -64,6 +65,18 @@ def stats(vcf1,knownPos):
         info = row[7]
         key0 = str(chr) + ":" + str(pos)
         inKnownDB = key0 in knownPos
+        if inKnownDB:
+            if alt == "a":
+                flg = knownPos[key0]
+                if flg != Flg_m6A:
+                    inKnownDB = False
+            if alt == "17596":
+                flg = knownPos[key0]
+                if flg != Flg_I:
+                    inKnownDB = False
+
+        drach = False
+
         if filter:
 
             if inKnownDB:
@@ -71,35 +84,57 @@ def stats(vcf1,knownPos):
                     counterknown[alt] = counterknown[alt] + 1
                 else:
                     counterknown[alt] = 1
+
+            if alt in counter:
+                counter[alt] = counter[alt] + 1
             else:
-                if alt in counter:
-                    counter[alt] = counter[alt] + 1
-                else:
-                    counter[alt] = 1
+                counter[alt] = 1
             cnt += 1
 
+            if alt == "a" and "knownMotif=True" in info:
+                drachcnt+=1
 
         if cnt % 1000 == 0:
-            print(cnt, counter,counterknown)
+            print(cnt, drachcnt,counter,counterknown)
+
+    print(drachcnt)
     print(counter)
     print(counterknown)
+
+import gzip
+def loadEditingFile(knownPos,path):
+
+    flg = Flg_I
+    with gzip.open(path,'rt', encoding='utf-8') as inst:
+        cnt = 0
+        for line in inst:
+            if cnt > 0:
+                data = (line.split("\t"))
+                key = str(data[1]) + ":" + str(data[2])
+                knownPos[key] = flg
+            cnt+=1
+            if cnt % 10000==0:
+                print(cnt,key)
 
 def run():
 
     genome="hg38"
     knowndir = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human*.bed"
-    knownPos,counts = loadKnownPos(knowndir, genome)
+    # editingfile = "/mnt/share/ueda/RNA004/nanoModiTune/TABLE1_hg38_v3.txt.gz"
+
+    knownPos = {}
+    knownPos,counts = loadKnownPos(knownPos,knowndir, genome)
     print(counts)
 
+    vcf1 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     # vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
-    # stats(vcf1, knownPos)
-
+    stats(vcf1, knownPos)
 
     # vcf2 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     # stats(vcf2, knownPos)
 
 
-    vcf3 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilter_result.vcf"
-    stats(vcf3, knownPos)
+    # vcf3 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilter_result.vcf"
+    # stats(vcf3, knownPos)
 
 run()

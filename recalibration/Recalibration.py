@@ -199,13 +199,14 @@ def getSixMer(genome,read,pos,localpos,refposs):
         #check splice
         if checkSplice(refposs,localpos,False):
             smer = getSpliceSeq(genome,localpos,refposs,False)
-
+            # print(not reverse,"splise")
     else:
 
         smer = genome[pos-4:pos+2].upper()
         #check splice
         if checkSplice(refposs, localpos, True):
             smer = getSpliceSeq(genome,localpos,refposs,True)
+            # print(not reverse, "splise")
 
     return smer
 
@@ -316,13 +317,16 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
                                             unrefB = True
                                             # recalibscore=0
                                             #set quality zero for un ref
+                                            # print("unref",originalscore)
                                         else:
                                             recalibbase+=1
                                             # set new qual
                                             ML[mlindex] = recalibscore
+                                            # print("recalib",originalscore,recalibscore)
 
                                     else:
                                         unchange+=1
+                                        # print("unchange")
 
                                     if unrefB == False:
                                         kkey = str(modkey[2])

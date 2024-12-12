@@ -126,12 +126,14 @@ def countHighMod(q_list,modqualthres=128):
 
 from scipy.stats import binomtest
 import math
-def judgePval(params, depth,  q_list, pthres):
+def judgePval(params, depth,  q_list, pthres,highthres=False):
 
     p_null = float(params.get('p_null', 0.03))
     highmodCnt = countHighMod(q_list)
-    if pthres > 0.4:
-        highmodCnt = countHighMod(q_list,192)
+    if (pthres > 0.4) or highthres:
+        min_mod_qual_high = float(params.get('min_mod_qual_high', 0.75))
+        thres = int(256*min_mod_qual_high)
+        highmodCnt = countHighMod(q_list,thres)
 
     p_value = 0
     try:
@@ -152,7 +154,7 @@ def judgePval(params, depth,  q_list, pthres):
 
 def refInConsistanse(modref,REF):
     REF = REF.upper()
-    print(modref,REF)
+    # print(modref,REF)
     return modref != REF
 
 def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
@@ -206,7 +208,6 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
                 continue
 
             q_list = pdict[gpos]
-
             modCnt,counts = count_intervals_simple(pthres,q_list)
             if gpos in depthCounter:
                depth = depthCounter[gpos]
@@ -224,9 +225,13 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
             if (mkey in mdict) and refInConsistanse(mdict[mkey],REF):
                 continue
 
+            highthres = False
+            if modkey[2] == "m" or modkey[2] == "17802":
+                highthres = True
             # binomial test
-            p_value,score = judgePval(params, depth,  q_list,pthres)
-            statsTestOK = (p_value<0.01) or (p_value==0)
+            p_value,score = judgePval(params, depth,  q_list,pthres,highthres)
+            p_value_max = float(params.get('p_value_max', 0.01))
+            statsTestOK = (p_value < p_value_max) or (p_value==0)
             neighborseq = None
             annoret = None
             if statsTestOK:
@@ -267,6 +272,8 @@ def pileup(interval,strand,bamfile_name,annotator,params,p_dict,record):
 
         if strand != (not read.is_reverse):
             continue
+        if read.mapping_quality == 0:
+            continue # do not take mapQ 0
 
         refposs = read.get_reference_positions(full_length=True)
         readlist.append((read,refposs))
@@ -324,12 +331,11 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,ref, gtf_file,  stringtie
         if autosomesOnly:
             if not putils.is_autosome_or_sex_chromosome(chrom):
                 continue
-        #
+
         if chrom in seq_index:
             record = seq_index[chrom]
 
         ivlist = intervalsByKey[chrkey]
-
         _pileup = partial(pileup,strand=strand,bamfile_name=bamfile_name, annotator=annotator,
                           params=params, p_dict=p_dict, record=record)
 
@@ -346,7 +352,6 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,ref, gtf_file,  stringtie
 
 
         outf.close()
-
 
 
 
@@ -416,20 +421,18 @@ def loadPropFiles(yamlf,statfile):
 
 
 # print("start")
-ref = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
-gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.vM25.annotation.gff3'
-
+ref = "/mnt/ssdnas07/pipeline/rna_v08/source/hg38.fa"
+gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.v44.annotation.gff3'
 # pileup_all(bamfile_name,bamfile_out,convertMatrix,out,gtf_file, ref,tpm,1)
 
 def run():
 
     yamlf="/share/trna/project/nanoModiTune/nanoModiTune.yaml"
-    recalib_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recalibstat.txt"
-    bamfile_name = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_1/Adipocyte_1/Adipocyte_1_recalib.bam"
-    stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_1/Adipocyte_1/Adipocyte_1.gtf"
-    out = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test"
+    recalib_stats = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/HEK293T_DR13_recalib_stat.txt"
+    bamfile_name = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/HEK293T_DR13_sorted.bam"
+    stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/HEK293T_DR13.gtf"
+    out = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test2"
     ncore =12
     pileup_all(yamlf,recalib_stats,bamfile_name,out,ref,gtf_file,stringtie_gtf,ncore=ncore)
-
 
 # run()
