@@ -351,8 +351,6 @@ def pileup_all(yamlf,recalib_stats,bamfile_name,outdir,ref, gtf_file,  stringtie
                 line = '\t'.join(map(str, ret))
                 print(line)
                 outf.write(line + '\n')
-
-
         outf.close()
 
 
@@ -383,7 +381,6 @@ def csv_to_dict_CplusDel(filename, factor=3):
                 value = (float(row[4])+float(row[6]))*factor
                 dictionary[key] = value
     return dictionary
-
 
 import numpy as np
 def calcparcentile(counter,parcentile):

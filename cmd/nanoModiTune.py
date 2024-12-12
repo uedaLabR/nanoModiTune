@@ -78,15 +78,15 @@ def summaryall(vcf,gtf,out):
 
 from filter.AttentionClassfication import trainNN
 @cmd.command()
-@click.option('-m6Apath', '--m6Apath')
-@click.option('-m5Cpath', '--m5Cpath')
-@click.option('-psudepath', '--psudepath')
+@click.option('-sourcepath', '--sourcepath')
+@click.option('-genome', '--genome')
 @click.option('-fp_ivtpath', '--fp_ivtpath')
 @click.option('-ref', '--ref')
 @click.option('-weightpath', '--weightpath')
-def train(m6Apath,m5cpath,psudepath,fp_ivtpath,ref,weightpath):
+@click.option('-outhistory', '--outhistory')
+def train(sourcepath,genome,fp_ivtpath,ref,weightpath,outhistory):
 
-   trainNN(m6Apath,m5cpath,psudepath,fp_ivtpath,ref,weightpath)
+   trainNN(sourcepath,genome,fp_ivtpath,ref,weightpath,outhistory,eachsize =1000,epoch=200)
 
 if __name__ == "__main__":
     cmd()

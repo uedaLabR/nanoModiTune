@@ -266,8 +266,48 @@ def getData(m6Apath,m5Cpath, psudepath,editingpath, fp_ivtpath,fasta_path,eachsi
     addData(data, psudepath, Flg_Y, 'A', maxcnt)
     return data
 
-def trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,weightpath,outhistory,eachsize =1000,epoch=200):
 
+Flg_Error = 0
+Flg_other = 1
+Flg_m6A = 2
+Flg_I = 3
+Flg_m5C = 4
+Flg_Y = 5
+
+def getFlg(path):
+
+    if "m5C" in path:
+        return Flg_m5C
+    if "m6A" in path:
+        return Flg_m6A
+    if "Pseudo" in path:
+        return Flg_Y
+    if "editing" in path:
+        return Flg_I
+    return -1
+
+import glob
+def getFiles(sourcepath,genome):
+
+    m6Apath, m5Cpath, psudepath, editingpath = "","","",""
+    files = glob.glob(sourcepath)
+    for file in files:
+        if genome in file:
+            flg = getFlg(file)
+            if flg == Flg_m5C:
+                m5Cpath = file
+            if flg == Flg_m6A:
+                m6Apath = file
+            if flg == Flg_Y:
+                psudepath = file
+            if flg == Flg_I:
+                editingpath = file
+
+    return m6Apath, m5Cpath, psudepath, editingpath
+
+def trainNN(sourcepath,genome,fp_ivtpath,ref,weightpath,outhistory,eachsize =1000,epoch=200):
+
+    m6Apath, m5Cpath, psudepath, editingpath = getFiles(sourcepath,genome)
     data = getData(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,eachsize)
     print("finish get data")
     train(data,weightpath,epoch,outhistory)
@@ -283,4 +323,4 @@ fp_ivtpath = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilt
 ref = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/bam_pass/U87ivt.fa"
 outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
 
-trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
+# trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
