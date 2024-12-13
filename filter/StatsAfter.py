@@ -128,8 +128,8 @@ def run():
     print(counts)
 
     #vcf1 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
-    # vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
-    vcf1 = "/share/ueda/nanoModiTune/Hek293pu.bed"
+    vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
+    # vcf1 = "/share/ueda/nanoModiTune/Hek293pu.bed"
     stats(vcf1, knownPos)
 
     # vcf2 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"

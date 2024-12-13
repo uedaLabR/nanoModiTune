@@ -33,8 +33,8 @@ def train(data,weightpath,epoch,outhistory):
     print(y.shape)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
 
-    np.save('/mnt/share/ueda/RNA004/resource/X_test.npy', X_test)
-    np.save('/mnt/share/ueda/RNA004/resource/y_test.npy', y_test)
+    # np.save('/mnt/share/ueda/RNA004/resource/X_test.npy', X_test)
+    # np.save('/mnt/share/ueda/RNA004/resource/y_test.npy', y_test)
 
     y_train = to_categorical(y_train, num_classes=6)
     y_test = to_categorical(y_test, num_classes=6)
