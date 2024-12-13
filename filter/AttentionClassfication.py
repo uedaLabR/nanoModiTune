@@ -290,7 +290,8 @@ import glob
 def getFiles(sourcepath,genome):
 
     m6Apath, m5Cpath, psudepath, editingpath = "","","",""
-    files = glob.glob(sourcepath)
+    files = glob.glob(sourcepath+"/*")
+    print("files",files,sourcepath+"/*")
     for file in files:
         if genome in file:
             flg = getFlg(file)
@@ -308,6 +309,8 @@ def getFiles(sourcepath,genome):
 def trainNN(sourcepath,genome,fp_ivtpath,ref,weightpath,outhistory,eachsize =1000,epoch=200):
 
     m6Apath, m5Cpath, psudepath, editingpath = getFiles(sourcepath,genome)
+    print(m6Apath, m5Cpath, psudepath, editingpath)
+    print("----")
     data = getData(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,eachsize)
     print("finish get data")
     train(data,weightpath,epoch,outhistory)
@@ -323,4 +326,6 @@ fp_ivtpath = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilt
 ref = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/bam_pass/U87ivt.fa"
 outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
 
-# trainNN(m6Apath,m5Cpath,psudepath,editingpath,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
+sourcepath="/mnt/ssdnas07/pipeline/rna_v08/source/knownsites"
+genome="hg38"
+trainNN(sourcepath,genome,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)

@@ -58,6 +58,7 @@ def stats(vcf1,knownPos):
     drachcnt = 0
     for index, row in bed_df.iterrows():
 
+        # print(row)
         chr = row[0]
         pos = row[1]
         alt = row[4]
@@ -126,8 +127,9 @@ def run():
     knownPos,counts = loadKnownPos(knownPos,knowndir, genome)
     print(counts)
 
-    vcf1 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
+    #vcf1 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     # vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
+    vcf1 = "/share/ueda/nanoModiTune/Hek293pu.bed"
     stats(vcf1, knownPos)
 
     # vcf2 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
