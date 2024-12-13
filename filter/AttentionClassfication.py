@@ -328,4 +328,4 @@ outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
 
 sourcepath="/mnt/ssdnas07/pipeline/rna_v08/source/knownsites"
 genome="hg38"
-trainNN(sourcepath,genome,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
+# trainNN(sourcepath,genome,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)
