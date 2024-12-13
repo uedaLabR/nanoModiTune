@@ -228,7 +228,7 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
             highthres = False
             if modkey[2] == "m" or modkey[2] == "17802":
                 highthres = True
-            # binomial test
+            # binomial test_stats
             p_value,score = judgePval(params, depth,  q_list,pthres,highthres)
             p_value_max = float(params.get('p_value_max', 0.01))
             statsTestOK = (p_value < p_value_max) or (p_value==0)

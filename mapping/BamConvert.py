@@ -601,5 +601,5 @@ def test():
 
     run_convert(inbam, outbam, ref, convertMatrix)
 
-# test()
+# test_stats()
 

@@ -372,6 +372,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
 
         predict_flg = -1
         known_flg = -1
+        filterflg = 0
 
         chr = row[0]
         pos = row[1]
@@ -396,9 +397,11 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
             if predict_flg == Flg_Error:
                 row[6] = False # Filter out
                 filteredout = True
+
             if predict_flg == Flg_other:
                 row[6] = False # Filter out
                 filteredout = True
+
 
         filter_afthres = 0.2
         #For m5C, Y require flg match, and non polynuc
@@ -409,20 +412,24 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
                 filteredout = True
 
         #
-        knownAndFlgOk = False
-        known_motif = False
-        if filteredout == True:
 
-            knownAndFlgOk = inKnownDB and (known_flg == called_flg)
-            if knownAndFlgOk:
-                row[6] = True
-                row[7] = info + ",knownSites=True"
-                filteredout = False
-            known_motif = isMotief(called_flg, info)
-            if known_motif:
-                row[6] = True
-                row[7] = info + ",knownMotif=True"
-                filteredout = False
+        knownAndFlgOk = inKnownDB and (known_flg == called_flg)
+        if knownAndFlgOk:
+            row[6] = True
+            row[7] = info + ",knownSites=True"
+            if filteredout == True:
+                row[7] = row[7] +",rescued=True"
+            filteredout = False
+
+        known_motif = isMotief(called_flg, info)
+        if known_motif:
+            row[6] = True
+            row[7] = info + ",knownMotif=True"
+            if filteredout == True:
+                row[7] = row[7] +",rescued=True"
+            filteredout = False
+
+
 
         if row[6] == True:
             dataHolder.append((chr,strand,pos,called_flg,filteredout,predict_flg,knownAndFlgOk,known_motif,row))
@@ -452,7 +459,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
 def run():
 
     checkpoint_path =  "/mnt/share/ueda/RNA004/resource/ntmodel.weights.h5"
-    input = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test/unfilter_result.vcf"
+    input = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test_stats/unfilter_result.vcf"
     output = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     knowndir = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human*.bed"
 
