@@ -5,4 +5,7 @@ p_null: 0.03
 lowqual_parcentile: 10
 min_mod_qual: 0.5
 min_mod_qual_high: 0.75
-p_value_max: 0.01
+p_value_max_m6A: 0.01
+p_value_max_Inosine: 0.03
+p_value_max_m5C: 0.005
+p_value_max_PsudeU: 0.005

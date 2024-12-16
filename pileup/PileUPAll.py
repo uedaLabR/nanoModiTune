@@ -157,6 +157,22 @@ def refInConsistanse(modref,REF):
     # print(modref,REF)
     return modref != REF
 
+def getPvalMax(modkey,params):
+
+    if modkey =="m":
+
+        return float(params.get('p_value_max_m5C', 0.005))
+
+    elif modkey == "a":
+        return float(params.get('p_value_max_m6A', 0.01))
+
+    elif modkey == "17802":
+        return float(params.get('p_value_max_PsudeU', 0.01))
+
+    elif modkey == "17596":
+
+        return float(params.get('p_value_max_Inosine', 0.01))
+
 def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
 
     result = []
@@ -230,7 +246,9 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
                 highthres = True
             # binomial test_stats
             p_value,score = judgePval(params, depth,  q_list,pthres,highthres)
-            p_value_max = float(params.get('p_value_max', 0.01))
+            # p_value_max = float(params.get('p_value_max', 0.01))
+            p_value_max = getPvalMax(modkey[2],params)
+
             statsTestOK = (p_value < p_value_max) or (p_value==0)
             neighborseq = None
             annoret = None
