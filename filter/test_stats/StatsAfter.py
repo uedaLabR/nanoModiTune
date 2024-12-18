@@ -132,6 +132,8 @@ def run():
     # vcf1 = "/share/ueda/nanoModiTune/Hek293pu.bed"
     stats(vcf1, knownPos)
 
+    vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v02/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
+    stats(vcf1, knownPos)
     # vcf2 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     # stats(vcf2, knownPos)
 

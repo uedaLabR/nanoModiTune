@@ -149,9 +149,10 @@ def run():
 
 
     vcf = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
+
     gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/HEK293T_DR13.gtf"
     genetsv = "/mnt/share/ueda/Docker/source/gencode_v44.tsv"
     out = "/mnt/share/ueda/RNA004/hek293/hek293_summary_all.xlsx"
     summary(vcf,gtf,out)
 
-# run()
+run()

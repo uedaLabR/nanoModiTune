@@ -157,7 +157,7 @@ def isMotief(called_flg,info):
 
     return False
 
-def group_by_position(dataHolder, distance=6):
+def group_by_position(dataHolder, distance=2):
     """
     Groups items in dataHolder by chr, strand, and within a specified distance for pos.
 
@@ -217,6 +217,8 @@ def setfilter(group):
     """
     knownidx = []
     knownmotiefL = []
+    predictOK = []
+    notfilteredout = []
     drachExist = False
 
     if len(group) ==1:
@@ -230,19 +232,49 @@ def setfilter(group):
             knownmotiefL.append(n)
             if called_flg == Flg_m6A:
                 drachExist = True
+        if called_flg == predict_flg:
+            predictOK.append(n)
+
+    takeidx = []
+    if len(knownidx) > 0:
+        takeidx = knownidx
+    elif len(predictOK) > 0:
+        takeidx = predictOK
+    elif len(knownmotiefL) > 0:
+        takeidx = knownmotiefL
+
+
+    if len(takeidx) == 0:
+        #take min P value
+        maxidx = 0
+        scoremin = 0
+        for n, (chr, strand, pos, called_flg, filteredout, predict_flg, knownAndFlgOk, known_motif, row) in enumerate(
+                group):
+
+            if row[6] == True:
+                score = float(row[5])
+                if score >  scoremin:
+                    scoremin = score
+                    maxidx = n
+
+        takeidx.append(maxidx)
+
 
     # Pass 2: Set filter status based on conditions
     for n, (chr, strand, pos, called_flg, filteredout, predict_flg, knownAndFlgOk, known_motif, row) in enumerate(group):
         setTrue = False
-
+        filter_true = row[6] == True
         # If drach exists, set m6A and neighboring Y to True
         if drachExist and called_flg == Flg_Y:
+            if filter_true:
+                setTrue = True
+
+        # Set True if current index is in known indexes or known motifs
+        if filter_true and n in takeidx:
             row[6] = True
             setTrue = True
 
-        # Set True if current index is in known indexes or known motifs
-        if n in knownidx or n in knownmotiefL:
-            row[6] = True
+        if filter_true and called_flg == Flg_I:
             setTrue = True
 
         # If none of the above conditions are met, set to False
@@ -283,11 +315,19 @@ def checkFlgAndPoliNuc(called_flg,predict_flg,strand,info,filter_afthres):
         cc = qseq.count('C')
         if cc >=2:
             return True
-
-    if  called_flg == Flg_m5C:
-        cc = qseq.count('T')
-        if cc >=2:
+        gg = qseq.count('G')
+        if gg >=2: #GCG
             return True
+
+    if  called_flg == Flg_Y:
+        tt = qseq.count('T')
+        if tt >=2:
+            return True
+        aa = qseq.count('A')
+        if aa >=2:
+            return True
+
+
     return False
 
 
@@ -299,7 +339,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
     model.compile()
     model.load_weights(checkpoint_path)
     # print(input,output,checkpoint_path,m5Cpath,psudepath)
-
+    print("loading DB")
     knownPos = loadKnownPos(knowndir,genome)
     print(knownPos.keys())
     bed_df = pd.read_csv(input, header=None, sep='\t')
@@ -398,7 +438,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
                 row[6] = False # Filter out
                 filteredout = True
 
-            if predict_flg == Flg_other:
+            if predict_flg == Flg_other and called_flg != Flg_I:
                 row[6] = False # Filter out
                 filteredout = True
 
@@ -459,10 +499,11 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
 def run():
 
     checkpoint_path =  "/mnt/share/ueda/RNA004/resource/ntmodel.weights.h5"
-    input = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test_stats/unfilter_result.vcf"
+    # input = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/test_stats/unfilter_result.vcf"
+    input = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v02/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
     output = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     knowndir = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human*.bed"
 
     classification(input,output,checkpoint_path,knowndir,genome="hg38")
 
-# run()
+run()
