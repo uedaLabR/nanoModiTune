@@ -506,4 +506,4 @@ def run():
 
     classification(input,output,checkpoint_path,knowndir,genome="hg38")
 
-run()
+# run()

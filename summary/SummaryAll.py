@@ -155,4 +155,4 @@ def run():
     out = "/mnt/share/ueda/RNA004/hek293/hek293_summary_all.xlsx"
     summary(vcf,gtf,out)
 
-run()
+# run()
