@@ -263,7 +263,7 @@ def setfilter(group):
     # Pass 2: Set filter status based on conditions
     for n, (chr, strand, pos, called_flg, filteredout, predict_flg, knownAndFlgOk, known_motif, row) in enumerate(group):
         setTrue = False
-        filter_true = row[6] == True
+        filter_true = (row[6] == True)
         # If drach exists, set m6A and neighboring Y to True
         if drachExist and called_flg == Flg_Y:
             if filter_true:

@@ -139,6 +139,8 @@ def judgePval(params, depth,  q_list, pthres,highthres=False):
     try:
         result = binomtest(highmodCnt, depth, p_null, alternative='greater')
         p_value = result.pvalue
+        if p_value is None:
+            p_value = 0
 
     except ValueError as e:
         pass
@@ -148,7 +150,6 @@ def judgePval(params, depth,  q_list, pthres,highthres=False):
     elif p_value == 0:
         score = 1000
 
-    print()
     return p_value,score
 
 
@@ -166,12 +167,14 @@ def getPvalMax(modkey,params):
     elif modkey == "a":
         return float(params.get('p_value_max_m6A', 0.01))
 
-    elif modkey == "17802":
+    elif modkey == "17802" or modkey == 17802:
         return float(params.get('p_value_max_PsudeU', 0.01))
 
-    elif modkey == "17596":
+    elif modkey == "17596" or modkey == 17596:
 
-        return float(params.get('p_value_max_Inosine', 0.01))
+        return float(params.get('p_value_max_Inosine', 0.03))
+
+    return 0.01
 
 def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
 
@@ -242,7 +245,7 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
                 continue
 
             highthres = False
-            if modkey[2] == "m" or modkey[2] == "17802":
+            if modkey[2] == "m" or modkey[2] == "17802" or modkey[2] == 17802:
                 highthres = True
             # binomial test_stats
             p_value,score = judgePval(params, depth,  q_list,pthres,highthres)
