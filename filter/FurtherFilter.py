@@ -453,7 +453,6 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
                 filteredout = True
 
         #
-
         knownAndFlgOk = inKnownDB and (known_flg == called_flg)
         if knownAndFlgOk:
             row[6] = True
@@ -490,9 +489,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
     new_df = pd.DataFrame(edited_rows)
     new_df.columns = title
     new_df.to_csv(output, sep='\t', index=False)
-    # new_df2 = new_df[new_df.iloc[:, 6] == True]
-    # new_df2.columns = title
-    # new_df2.to_csv(output, sep='\t', index=False)
+
 
 
 def run():
