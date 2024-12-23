@@ -72,13 +72,14 @@ class GeneHolder:
 
     def addGenes(self, genes):
 
-        for gene in genes:
+        if genes is not None:
+            for gene in genes:
 
-            if len(gene)>2:
-                if (gene[2]=="gene"):
-                    self.addMainGene(gene)
+                if len(gene)>2:
+                    if (gene[2]=="gene"):
+                        self.addMainGene(gene)
 
-            self.addGene(gene)
+                self.addGene(gene)
 
     def resolveinterval(self):
 
@@ -144,21 +145,57 @@ class GenomeAnnotator:
             if stringtie_gtf!=None and len(stringtie_gtf)>0:
                 self.stringtie_genes = BedTool(stringtie_gtf)
 
+
             def is_gene_or_transcript(feature):
                 return feature[2] == 'gene' or feature[2] == 'transcript'
 
+            def is_UTR(feature):
+                return "UTR" in feature[2]
+
             genes = self.genes.filter(is_gene_or_transcript)
-            stgenes = self.stringtie_genes.filter(is_gene_or_transcript)
+            # print(genes)
+            if stringtie_gtf:
+                stgenes = self.stringtie_genes.filter(is_gene_or_transcript)
+
+            utrs = self.genes.filter(is_UTR)
 
             self.gh = GeneHolder(neibormargin)
             self.gh.addGenes(genes)
-            self.gh.addGenes(stgenes)
+            if stringtie_gtf:
+                self.gh.addGenes(stgenes)
             self.gh.resolveinterval()
+
+            self.gh_utr = GeneHolder(neibormargin)
+            self.gh_utr.addGenes(utrs)
+            self.gh_utr.resolveinterval()
             print("finish")
+
 
     def getIntervalsByKey(self):
 
         return self.gh.getIntervalsByKey()
+
+    def annotate_is_UTR(self,chrom, strand, gpos):
+
+        if strand:
+            il = self.gh_utr.plusgenes[chrom]
+        else:
+            il = self.gh_utr.minusgenes[chrom]
+
+        if il is None:
+            return False
+
+        il = il.genes
+        matching_gene = [
+            interval for interval in il if interval.start <= gpos < interval.end
+        ]
+        if len(matching_gene) > 0:
+
+            return True
+
+        return False
+
+
 
     def annotate_genomic_position(self,chrom, strand, gpos):
 
@@ -167,14 +204,10 @@ class GenomeAnnotator:
         else:
             il = self.gh.minusMaingenes[chrom]
 
-        # print(chrom, strand, gpos)
 
         matching_gene = [
             interval for interval in il if interval.start <= gpos < interval.end
         ]
-        # print("matching gene",matching_gene)
-        # print(chrom,strand,gpos,matching_gene)
-        # print(matching_gene)
         if len(matching_gene) > 0:
 
             if len(matching_gene)==1:
@@ -182,10 +215,12 @@ class GenomeAnnotator:
             else:
                 overlapping_genes_sorted = sorted(matching_gene, key=get_level)
                 best_gene = overlapping_genes_sorted[0]
+
             print(best_gene)
             gene_id = best_gene.attrs.get('ID', '')
             gene_type = best_gene.attrs.get('gene_type', '')
             gene_name = best_gene.attrs.get('gene_name', '')
+
             return "ID="+gene_id+",gene_name="+gene_name+",gene_type="+gene_type
 
         return None
@@ -193,11 +228,15 @@ class GenomeAnnotator:
 
 ref = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
 gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.vM25.annotation.gff3'
-stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.gtf"
+# stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.gtf"
+stringtie_gtf = None
 
-# annotator = GenomeAnnotator(ref,gtf_file,stringtie_gtf)
-# chrom="chr6"
-# strand=True
-# gpos = 145216699
-# annoret = annotator.annotate_genomic_position(chrom, strand, gpos)
-# print(annoret)
+annotator = GenomeAnnotator(ref,gtf_file,stringtie_gtf)
+chrom="chr6"
+strand=True
+gpos = 145216699
+145220737
+annoret = annotator.annotate_genomic_position(chrom, strand, gpos)
+print(annoret)
+isUTR = annotator.annotate_is_UTR(chrom, strand, gpos)
+print(isUTR)

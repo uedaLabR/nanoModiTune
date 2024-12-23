@@ -421,6 +421,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
         info = row[7]
 
         strand = "STRAND=True" in info
+        utr = "UTR=True" in info
 
         key0 = str(chr) + ":" + str(pos)
         if key0 in posdict:
@@ -447,7 +448,7 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
         #For m5C, Y require flg match, and non polynuc
         if called_flg == Flg_m5C or called_flg == Flg_Y:
             checkNG = checkFlgAndPoliNuc(called_flg,predict_flg,strand,info,filter_afthres)
-            if checkNG:
+            if checkNG or utr:
                 row[6] = False  # Filter out
                 filteredout = True
 
@@ -468,8 +469,6 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
             if filteredout == True:
                 row[7] = row[7] +",rescued=True"
             filteredout = False
-
-
 
         if row[6] == True:
             dataHolder.append((chr,strand,pos,called_flg,filteredout,predict_flg,knownAndFlgOk,known_motif,row))

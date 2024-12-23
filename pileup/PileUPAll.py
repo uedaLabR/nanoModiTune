@@ -258,6 +258,11 @@ def pileupMod(readlist,chrom,strand,start, end,record,annotator,params,p_dict):
             if statsTestOK:
 
                 annoret = annotator.annotate_genomic_position(chrom, strand, gpos)
+                if annoret is not None:
+                    isUTR = annotator.annotate_is_UTR(chrom, strand, gpos)
+                    if isUTR:
+                        annoret = annoret+",UTR=True"
+
                 neighborseq = getNeighborSeq(record, chrom, gpos, strand)
 
 
