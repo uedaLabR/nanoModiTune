@@ -368,11 +368,11 @@ def run_recalib(inbam, outbam, refs, recalib_db, out_stats):
         write_string_and_data_to_csv(out_stats, alldata)
 
 # Example execution
-refs = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
-inbam = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_1/Adipocyte_1/Adipocyte_1_recalib.bam"
-outbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/Adipocyte_2out_recalib.bam"
-recalib_db = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats"
-out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recalibstat.txt"
+# refs = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
+# inbam = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_1/Adipocyte_1/Adipocyte_1_recalib.bam"
+# outbam = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/Adipocyte_2out_recalib.bam"
+# recalib_db = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats"
+# out_stats = "/mnt/share/ueda/RNA004/Dorado0.8/bamout/stats/Adipocyte_2out_recalibstat.txt"
 
 from functools import partial
 import cProfile

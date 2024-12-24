@@ -446,8 +446,8 @@ def loadPropFiles(yamlf,statfile):
 
 
 # print("start")
-ref = "/mnt/ssdnas07/pipeline/rna_v08/source/hg38.fa"
-gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.v44.annotation.gff3'
+# ref = "/mnt/ssdnas07/pipeline/rna_v08/source/hg38.fa"
+# gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.v44.annotation.gff3'
 # pileup_all(bamfile_name,bamfile_out,convertMatrix,out,gtf_file, ref,tpm,1)
 
 def run():
