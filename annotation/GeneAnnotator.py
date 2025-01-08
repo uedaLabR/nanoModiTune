@@ -226,17 +226,17 @@ class GenomeAnnotator:
         return None
 
 
-ref = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
-gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.vM25.annotation.gff3'
-# stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.gtf"
-stringtie_gtf = None
-
-annotator = GenomeAnnotator(ref,gtf_file,stringtie_gtf)
-chrom="chr6"
-strand=True
-gpos = 145216699
-145220737
-annoret = annotator.annotate_genomic_position(chrom, strand, gpos)
-print(annoret)
-isUTR = annotator.annotate_is_UTR(chrom, strand, gpos)
-print(isUTR)
+# ref = "/mnt/ssdnas07/pipeline/rna_v08/source/mm10.fa"
+# gtf_file = '/mnt/ssdnas07/pipeline/rna_v08/source/gencode.vM25.annotation.gff3'
+# # stringtie_gtf = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/Adipocyte_2/Adipocyte_2/Adipocyte_2out.gtf"
+# stringtie_gtf = None
+#
+# annotator = GenomeAnnotator(ref,gtf_file,stringtie_gtf)
+# chrom="chr6"
+# strand=True
+# gpos = 145216699
+# 145220737
+# annoret = annotator.annotate_genomic_position(chrom, strand, gpos)
+# print(annoret)
+# isUTR = annotator.annotate_is_UTR(chrom, strand, gpos)
+# print(isUTR)

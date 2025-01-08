@@ -316,16 +316,16 @@ def trainNN(sourcepath,genome,fp_ivtpath,ref,weightpath,outhistory,eachsize =100
     train(data,weightpath,epoch,outhistory)
 
 
-checkpoint_path =  "/mnt/share/ueda/RNA004/resource/ntmodel.weights.h5"
-m6Apath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.m6A.result.col29.bed"
-m5Cpath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.m5C.result.col29.bed"
-psudepath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.Pseudo.result.col29.bed"
-editingpath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.RNA-editing.result.col29.bed"
-
-fp_ivtpath = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilter_result.vcf"
-ref = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/bam_pass/U87ivt.fa"
-outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
-
-sourcepath="/mnt/ssdnas07/pipeline/rna_v08/source/knownsites"
-genome="hg38"
+# checkpoint_path =  "/mnt/share/ueda/RNA004/resource/ntmodel.weights.h5"
+# m6Apath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.m6A.result.col29.bed"
+# m5Cpath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.m5C.result.col29.bed"
+# psudepath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.Pseudo.result.col29.bed"
+# editingpath = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human.hg38.RNA-editing.result.col29.bed"
+#
+# fp_ivtpath = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/U87_IVT/U87_IVT/unfilter_result.vcf"
+# ref = "/mnt/share/ueda/RNA004/U87/U87_IVT/20231227_1535_MN32625_FAX73794_2cf3868f/bam_pass/U87ivt.fa"
+# outhistory = "/mnt/share/ueda/RNA004/resource/outhistory.csv"
+#
+# sourcepath="/mnt/ssdnas07/pipeline/rna_v08/source/knownsites"
+# genome="hg38"
 # trainNN(sourcepath,genome,fp_ivtpath,ref,checkpoint_path,outhistory,eachsize =20000,epoch=100)

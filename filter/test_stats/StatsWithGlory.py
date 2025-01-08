@@ -51,7 +51,8 @@ def stats(vcf1,knownPos):
 
 # File paths
 file1_path = '/mnt/share/ueda/RNA004/resource/glory.bed'
-file2_path = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
+# file2_path = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
+file2_path = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v02/HEK293T_DR13/HEK293T_DR13/filter_result.vcf"
 # file4_path = '/mnt/share/ueda/RNA004/nanoZero/unfilter_result.vcf'
 knownPos = {}
 bed_df = pd.read_csv(file1_path, header=None, sep='\t')
