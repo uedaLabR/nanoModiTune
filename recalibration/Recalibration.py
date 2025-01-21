@@ -94,6 +94,8 @@ class Recalib:
         if kmer[3]!=refnuc:
             # print("Err",pos,strand,kmer,refnuc,mod)
             return -1
+        if ("n" in kmer) or ("N" in kmer):
+            return -1
         # print("OK", pos,strand, kmer, refnuc, mod)
         kkey = str(mod) + "_" + kmer
         if kkey in self.lookuptable:
@@ -130,7 +132,7 @@ from numba import jit
 # @jit(nopython=True)
 def revcon(seq):
     complement = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G','N':'N',
-                  'a': 't', 't': 'a', 'g': 'c', 'c': 'g'}
+                  'a': 't', 't': 'a', 'g': 'c', 'c': 'g','n':'n'}
 
     revcom_seq = []
 

@@ -142,7 +142,7 @@ def isMotief(called_flg,info):
     ifs = info.split(',')
     for i in ifs:
         if "SEQ=" in i:
-            print(i)
+            # print(i)
             qseq0 = i.replace("SEQ=", "")
             if len(qseq0) > 10:
                 qseq = qseq0[17:23]
@@ -331,8 +331,8 @@ def checkFlgAndPoliNuc(called_flg,predict_flg,strand,info,filter_afthres):
     return False
 
 
-
-def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
+from annotation.DBAnnotator import DBAnnotator
+def classification(input,output,checkpoint_path,knowndir,genome="hg38",dbSNPdir=None):
 
     model = NNModel.getModel()
     model.summary()
@@ -407,7 +407,13 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
         key = poslist[n]
         posdict[key] = pre
 
+    dbAnnotator = None
+    if dbSNPdir:
+
+        dbAnnotator = DBAnnotator(dbSNPdir)
+
     dataHolder = []
+    chrprev = ""
     for index, row in bed_df.iterrows():
 
         predict_flg = -1
@@ -419,6 +425,14 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
         REF = row[3]
         ALT = row[4]
         info = row[7]
+
+        if chr!=chrprev:
+            if dbAnnotator:
+                print("loading dbSNP",chr)
+                dbAnnotator.lodDict(chr)
+
+
+        chrprev = chr
 
         strand = "STRAND=True" in info
         utr = "UTR=True" in info
@@ -451,6 +465,19 @@ def classification(input,output,checkpoint_path,knowndir,genome="hg38"):
             if checkNG or utr:
                 row[6] = False  # Filter out
                 filteredout = True
+
+            if dbAnnotator:
+
+                s1 = dbAnnotator.isSNP(pos)
+                s2 = dbAnnotator.isSNP(pos-1)
+                s3 = dbAnnotator.isSNP(pos+1)
+                b = s1 or s2 or s3
+                # print(chr,pos,s1,s2,s3,b,row[6])
+                if b:
+                    # print("pass here")
+                    row[6] = False  # Filter out
+                    filteredout = True
+                    row[7] = info + ",dbSNP="+b
 
         #
         knownAndFlgOk = inKnownDB and (known_flg == called_flg)
@@ -499,7 +526,8 @@ def run():
     input = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v02/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
     output = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     knowndir = "/mnt/ssdnas07/pipeline/rna_v08/source/knownsites/human*.bed"
+    dbSNP = "/mnt/ssdnas07/pipeline/rna_v083/source/dbSNP151TConly"
 
-    classification(input,output,checkpoint_path,knowndir,genome="hg38")
+    classification(input,output,checkpoint_path,knowndir,genome="hg38",dbSNPdir=dbSNP)
 
 # run()

@@ -49,7 +49,7 @@ def _loadKnownPos(knownPos,flg,path):
         cnt+=1
     return cnt
 
-def stats(bed1,knownPos):
+def stats(bed1,knownPos,counts):
 
     cnt = 0
     scorethres = 20
@@ -93,8 +93,22 @@ def stats(bed1,knownPos):
             if cnt % 1000 == 0:
                 print(columns[0],columns[1],cnt, counter, counterknown)
 
-        print(counter)
-        print(counterknown)
+        for key in counterknown:
+
+            if key == "a":
+                keynum = Flg_m6A
+            if key == "m":
+                keynum = Flg_m5C
+            if key == "17596":
+                keynum = Flg_I
+            if key == "17802":
+                keynum = Flg_Y
+
+            indb = counts[keynum]
+            overlap = counterknown[key]
+            candidate = counter[key]
+            print(key,candidate-overlap,overlap,indb-overlap)
+
 
 import gzip
 def loadEditingFile(knownPos,path):
@@ -124,7 +138,7 @@ def run():
     #vcf1 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     # vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
     vcf1 = "/share/ueda/nanoModiTune/Hek293pu.bed"
-    stats(vcf1, knownPos)
+    stats(vcf1, knownPos,counts)
 
     # vcf2 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     # stats(vcf2, knownPos)

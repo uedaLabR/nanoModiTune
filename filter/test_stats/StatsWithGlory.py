@@ -16,6 +16,9 @@ def stats(vcf1,knownPos):
         alt = row[4]
         filter = row[6]
         info = row[7]
+        if "rescued=True" in info and "knownSites=True" in info:
+            continue
+
         key0 = str(chr) + ":" + str(pos)
         inKnownDB = key0 in knownPos
         drach = False
@@ -66,8 +69,9 @@ for index, row in bed_df.iterrows():
     print(key)
     knownPos[key] = 1
     cnt+=1
-print(cnt)
+
 stats(file2_path,knownPos)
+print(cnt)
 
 
 

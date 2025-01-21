@@ -88,6 +88,15 @@ def train(sourcepath,genome,fp_ivtpath,ref,weightpath,outhistory):
 
    trainNN(sourcepath,genome,fp_ivtpath,ref,weightpath,outhistory,eachsize =1000,epoch=200)
 
+from prep.ExtractSNP import prepareDB
+@cmd.command()
+@click.option('-invcf', '--invcf')
+@click.option('-utdir', '--utdir')
+def dbSNPPrepare(invcf,outdir):
+
+    prepareDB(invcf,outdir)
+
+
 if __name__ == "__main__":
     cmd()
 

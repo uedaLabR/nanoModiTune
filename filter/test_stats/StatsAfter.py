@@ -49,13 +49,16 @@ def _loadKnownPos(knownPos,flg,path):
         cnt+=1
     return cnt
 
-def stats(vcf1,knownPos):
+def stats(vcf1,knownPos,counts):
 
     bed_df = pd.read_csv(vcf1, header=None, sep='\t')
     counter = {}
     counterknown = {}
     cnt = 0
     drachcnt = 0
+
+
+
     for index, row in bed_df.iterrows():
 
         # print(row)
@@ -64,20 +67,38 @@ def stats(vcf1,knownPos):
         alt = row[4]
         filter = row[6]
         info = row[7]
+        if "rescued=True" in info and "knownSites=True" in info:
+            continue
+        if pos == "POS":
+            continue
+
         key0 = str(chr) + ":" + str(pos)
-        inKnownDB = key0 in knownPos
+        key1 = str(chr) + ":" + str(int(pos)-1)
+        key2 = str(chr) + ":" + str(int(pos)+1)
+        inKnownDB = (key0 in knownPos) or  (key1 in knownPos) or  (key2 in knownPos)
         if inKnownDB:
             if alt == "a":
-                flg = knownPos[key0]
+                if key0 in knownPos:
+                    flg = knownPos[key0]
+                elif key1 in knownPos:
+                    flg = knownPos[key1]
+                else:
+                    flg = knownPos[key2]
                 if flg != Flg_m6A:
                     inKnownDB = False
             if alt == "17596":
-                flg = knownPos[key0]
+                if key0 in knownPos:
+                    flg = knownPos[key0]
+                elif key1 in knownPos:
+                    flg = knownPos[key1]
+                else:
+                    flg = knownPos[key2]
                 if flg != Flg_I:
                     inKnownDB = False
 
         drach = False
-
+        if "dbSNP" in info:
+            print(info,filter)
         if filter:
 
             if inKnownDB:
@@ -95,12 +116,28 @@ def stats(vcf1,knownPos):
             if alt == "a" and "knownMotif=True" in info:
                 drachcnt+=1
 
+
         if cnt % 1000 == 0:
             print(cnt, drachcnt,counter,counterknown)
 
     print(drachcnt)
     print(counter)
     print(counterknown)
+    for key in counterknown:
+
+        if key == "a":
+            keynum = Flg_m6A
+        if key == "m":
+            keynum = Flg_m5C
+        if key == "17596":
+            keynum = Flg_I
+        if key == "17802":
+            keynum = Flg_Y
+
+        indb = counts[keynum]
+        overlap = counterknown[key]
+        candidate = counter[key]
+        print(key, candidate - overlap, overlap, indb - overlap)
 
 import gzip
 def loadEditingFile(knownPos,path):
@@ -127,10 +164,11 @@ def run():
     knownPos,counts = loadKnownPos(knownPos,knowndir, genome)
     print(counts)
 
-    vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v02/HEK293T_DR13/HEK293T_DR13/filter_result.vcf"
-    # vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
+    # vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v02/HEK293T_DR13/HEK293T_DR13/filter_result.vcf"
+    #vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v01/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
+    vcf1 = "/mnt/share/ueda/RNA004/hek293/result_filter.vcf"
     # vcf1 = "/share/ueda/nanoModiTune/Hek293pu.bed"
-    stats(vcf1, knownPos)
+    stats(vcf1, knownPos,counts)
 
     # vcf1 = "/mnt/ssdnas07/nanozero/rna/nanomoditune_v02/HEK293T_DR13/HEK293T_DR13/unfilter_result.vcf"
     # stats(vcf1, knownPos)
